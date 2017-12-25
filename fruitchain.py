@@ -24,11 +24,6 @@ class Environment:
         self.honestNodes = []
         self.corruptNodes = []
 
-        # Mining pool related params
-        self.miningPool = set()
-        self.poolHashFraction = 0
-        self.rewardTime = defaultdict(int) # <K, V> = <Node id, Round num. of last reward>
-
         # Keep track of txs
         self.unprocessedTxs = []
         self.processedTxs = []
@@ -67,8 +62,7 @@ class Environment:
         for i in range(self.txRate):
             fee = 1
             tx = Transaction(roundNum, fee, 1)
-            # check this unprocessed txs sorted
-            # bisect.insort(self.unprocessedTxs, tx)
+            # bisect.insort(self.unprocessedTxs, tx) check this to keep unprocessed txs sorted
             self.unprocessedTxs.append(tx)
 
     def step(self, roundNum):
@@ -82,24 +76,23 @@ class Environment:
 
         # 1. Generate new txs
         self.generateTxs(roundNum)
-        # 2. Check if someone mines
-        # Pick an ID for the miner of the block in this round. If ID is n, nobody mines
+
+        # 2. Pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
         b, f = None, None
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
+            # Trigger reward schemes
             self.rewardBitcoin(blockLeaderID, roundNum)
-            # self.rewardFruitchain(blockLeaderID, roundNum)
+            self.rewardFruitchain(blockLeaderID, roundNum)
         if fruitLeaderID != self.n and blockLeaderID != fruitLeaderID: # same node can't mine both a block and a fruit
             f = self.nodes[fruitLeaderID-1].mineFruit(roundNum)
+
         # 3. Broadcast what's been mined
         if b != None or f != None:
             for node in self.nodes:
                 node.deliver((b, f))
-
-        # 4. (Optional) update the mining pool
-        # self.updateMiningPool(roundNum)
 
         #print("Round:" + str(roundNum) + " ended.")
         return b, f
@@ -108,19 +101,11 @@ class Environment:
         """
         blockLeaderID: index of the leader node
 
-        Distributes rewards to miners acc. to Bitcoin rewarding scheme
-        If leader is not in pool, he fetches everything from the recently mined head.
-        If he's in pool, every member of pool gets a reward w.r.t to their hash fraction
+        Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
+        miner gets everything
         """
         totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
-        if blockLeaderID not in self.miningPool:
-            self.nodes[blockLeaderID].totalBitcoinReward += totalFee
-            self.rewardTime[blockLeaderID] = roundNum
-            return
-        for i in self.miningPool:
-            node = self.nodes[i]
-            node.totalBitcoinReward += round(totalFee * (node.hashFrac / self.poolHashFraction))
-            self.rewardTime[i] = roundNum
+        self.nodes[blockLeaderID].totalBitcoinReward += totalFee
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """
@@ -151,15 +136,6 @@ class Environment:
             self.nFruitsInWindow += (head.nFruits + 1)
         else:
             self.nFruitsInWindow += (head.nFruits + 1) # +1 is the implicit fruit (see paper)
-
-    def updateMiningPool(self, roundNum):
-        """
-        Have nodes that wait more than their expected time join the mining pool
-        """
-        for node in self.honestNodes:
-            if (node.id not in self.miningPool) and (roundNum - self.rewardTime[node.id]) >= node.expectedBlockInterval:
-                node.joinPool()
-                self.poolHashFraction += node.hashFrac
 
 class Node:
     def __init__(self, _id=0, hashFrac=1, env=Environment()):
@@ -208,11 +184,13 @@ class Node:
 
         TODO:There can be an upper bound on # of fruits per block later
         '''
-        # Do tx selection
+        # 1. Do tx selection
         freshFruits = self.getFreshFruits()
         block = Block(self.id, roundNum, freshFruits, [])
-        self.defaultTxSelection(roundNum, block)
-        # Append the block, update fruits in it
+        # self.defaultTxSelection(roundNum, block)
+        self.selectAllTxs(roundNum, block)
+
+        # 2. Append the block, update fruits in it
         self.blockChain.append(block)
         for f in freshFruits:
             f.includeRound = roundNum
@@ -220,12 +198,6 @@ class Node:
             self.fruitsInChain[hash(f)] = hash(block)
         #print("Node:" + str(self.id) + " mined a block!" )
         return block
-
-    def joinPool(self):
-        """
-        Node joins the mining pool
-        """
-        self.environment.miningPool.add(self.id)
 
     def deliver(self, msg):
         '''
