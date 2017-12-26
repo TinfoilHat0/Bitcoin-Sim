@@ -219,34 +219,5 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(round(nodes[4].totalFruitchainReward, 2), 23.76)
         self.assertEqual(nodes[5].totalFruitchainReward, 1)
 
-    def test_updateMiningPool(self):
-        """
-        We have three nodes, each having 3 as expected block interval.
-        One of them mines first for first 3 rounds. The other too joins the pool.
-        They mine the next block. They should split the reward.
-        """
-        nodes = []
-        for i in range(3):
-            nodes.append(Node(i, 1/3))
-        env = Environment()
-        env.initializeNodes(nodes)
-
-        for i in range(3):
-            env.unprocessedTxs.append(Transaction(i, 10, 1))
-            nodes[0].mineBlock(i+1)
-            env.rewardBitcoin(0, i+1)
-
-        self.assertEqual(nodes[0].totalBitcoinReward, 30)
-        env.updateMiningPool(3)
-        self.assertEqual(env.miningPool, {1, 2})
-
-        env.unprocessedTxs.append(Transaction(4, 50, 1))
-        nodes[1].mineBlock(4)
-        env.rewardBitcoin(1, 4)
-
-        self.assertEqual(nodes[1].totalBitcoinReward, 25)
-        self.assertEqual(nodes[2].totalBitcoinReward, 25)
-
-
 if __name__ == '__main__':
     unittest.main()

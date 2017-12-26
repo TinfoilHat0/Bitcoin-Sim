@@ -60,7 +60,7 @@ class Environment:
 
     def generateTxs(self, roundNum):
         for i in range(self.txRate):
-            fee = 1
+            fee = random.randint(1, 10)
             tx = Transaction(roundNum, fee, 1)
             # bisect.insort(self.unprocessedTxs, tx) check this to keep unprocessed txs sorted
             self.unprocessedTxs.append(tx)
@@ -87,7 +87,7 @@ class Environment:
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
         if fruitLeaderID != self.n and blockLeaderID != fruitLeaderID: # same node can't mine both a block and a fruit
-            f = self.nodes[fruitLeaderID-1].mineFruit(roundNum)
+            f = self.nodes[fruitLeaderID].mineFruit(roundNum)
 
         # 3. Broadcast what's been mined
         if b != None or f != None:
@@ -158,6 +158,10 @@ class Node:
         # simulator related parameters
         self.environment = env
         self.k = self.environment.k
+        # total blocks mined by the node
+        self.nBlocksMined = 0
+        # total fruits mined by the node
+        self.nFruitsMined = 0
         # total reward received by the node acc. Bitcoin sceheme
         self.totalBitcoinReward = 0
         # total reward received by the node acc. Fruitchain sceheme and other related params
@@ -174,6 +178,7 @@ class Node:
         fruit = Fruit(self.id, roundNum, hangIndex)
         self.validFruits[fruit.hangBlockHeight].add(fruit)
 
+        self.nFruitsMined += 1
         #print("Node:" + str(self.id) + " mined a fruit!" )
         return fruit
 
@@ -189,13 +194,14 @@ class Node:
         block = Block(self.id, roundNum, freshFruits, [])
         # self.defaultTxSelection(roundNum, block)
         self.selectAllTxs(roundNum, block)
-
         # 2. Append the block, update fruits in it
         self.blockChain.append(block)
         for f in freshFruits:
             f.includeRound = roundNum
             f.contBlockHeight = self.blockChain.length
             self.fruitsInChain[hash(f)] = hash(block)
+
+        self.nBlocksMined += 1
         #print("Node:" + str(self.id) + " mined a block!" )
         return block
 
