@@ -41,7 +41,7 @@ def plotMinerRewards(filename):
 
     rects1 = ax.bar(ind, hashFracs, width, color='r')
     rects2 = ax.bar(ind+width, blocksMined, width, color='b')
-    rects3 = ax.bar(ind+width*2, blocksMined, width, color='g')
+    rects3 = ax.bar(ind+width*2, fruitsMined, width, color='g')
     rects4 = ax.bar(ind+width*3, bitcoinRewards, width, color='y')
     rects5 = ax.bar(ind+width*4, fruitchainRewards, width, color='m')
 

@@ -15,7 +15,6 @@ class Transaction:
     def __repr__(self):
         return str(self.fee / self.size)
 
-
 class Fruit:
     def __init__(self, minerID=-1, mineRound=0, hangIndex=0):
         '''
@@ -39,14 +38,13 @@ class Fruit:
     def __repr__(self):
         return str(self.minerID) + '|' + str(self.mineRound) + '|' + str(0)
 
-
 class Block:
     def __init__(self, minerID=-1, mineRound=0, fruits=set(), txs=[]):
         self.minerID = minerID
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = 0 #sum of fees in txs set
+        self.totalFee = 2000 #sum of fees in txs set
         self.height = 1 # index + 1
 
         self.nFruits = len(fruits)
@@ -62,7 +60,6 @@ class Block:
 
     def __repr__(self):
         return str(self.minerID) + '|' + str(self.mineRound) + '|' + str(1)
-
 
 class Blockchain:
     def __init__(self):

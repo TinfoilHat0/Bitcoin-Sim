@@ -1,13 +1,14 @@
 #coding: utf-8
 from dataStructures import *
-from math import ceil
+from math import ceil, floor
 import random
 from collections import defaultdict
 import numpy as np
 import bisect
+import copy
 
 class Environment:
-    def __init__(self, p = 1, pF = 1, txRate = 5, k = 16):
+    def __init__(self, p = 1, pF = 1, txRate = 5, k = 16, delay=0):
         '''
         p: pr. of mining a block in a rounds
         pF: pr. of mining a fruit in a round
@@ -33,6 +34,11 @@ class Environment:
         self.c2 = 1/10
         self.c3 = 1/100
         self.nFruitsInWindow = 0
+
+        # Delay related params.
+        self.memPool = defaultdict(list)  # env. keeps messages in this list. <K, V>: <bcastTime, messages>
+        self.delay = delay # Currently assuming uniform delay
+
 
     def initializeNodes(self, nodes, t = 0):
         '''
@@ -60,10 +66,22 @@ class Environment:
 
     def generateTxs(self, roundNum):
         for i in range(self.txRate):
-            fee = random.randint(1, 10)
+            fee =  1 #random.randint(1, 10)
             tx = Transaction(roundNum, fee, 1)
             # bisect.insort(self.unprocessedTxs, tx) check this to keep unprocessed txs sorted
             self.unprocessedTxs.append(tx)
+
+    def bcast(self, currentRound):
+        '''
+        Broadcast the received messages back to nodes after delay.
+
+        TODO: Currently assumes uniform  delay. To extend, have env. store
+        delay between each node individually.
+        '''
+        if (currentRound - self.delay) in self.memPool:
+            for msg in self.memPool[currentRound - self.delay]:
+                for node in self.nodes:
+                    node.deliver(msg)
 
     def step(self, roundNum):
         '''
@@ -72,11 +90,8 @@ class Environment:
         2. Attempt to mine
         3. Send mining results to all nodes
         '''
-        #print("Round:" + str(roundNum) + " started.")
-
         # 1. Generate new txs
         self.generateTxs(roundNum)
-
         # 2. Pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
@@ -84,17 +99,21 @@ class Environment:
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
             # Trigger reward schemes
-            self.rewardBitcoin(blockLeaderID, roundNum)
-            self.rewardFruitchain(blockLeaderID, roundNum)
+            # self.rewardBitcoin(blockLeaderID, roundNum)
+            # self.rewardFruitchain(blockLeaderID, roundNum)
         if fruitLeaderID != self.n and blockLeaderID != fruitLeaderID: # same node can't mine both a block and a fruit
             f = self.nodes[fruitLeaderID].mineFruit(roundNum)
+        # 3. Broadcast what's been mined to environment
+        if f != None:  # bcast the fruit
+            self.memPool[roundNum].append(f) #
+        if b != None: # bcast the chain and fruits in it
+            self.memPool[roundNum].append( (copy.copy(self.nodes[blockLeaderID].blockChain), copy.copy(self.nodes[blockLeaderID].fruitsInChain)) )
 
-        # 3. Broadcast what's been mined
-        if b != None or f != None:
-            for node in self.nodes:
-                node.deliver((b, f))
+        self.bcast(roundNum)
+        #for i in range(len(self.nodes)):
+        #    print("Node:" + str(i) + " has a chain of length:" + str(self.nodes[i].blockChain.length))
 
-        #print("Round:" + str(roundNum) + " ended.")
+        #print("Round:" + str(roundNum) + " has ended.")
         return b, f
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
@@ -102,10 +121,24 @@ class Environment:
         blockLeaderID: index of the leader node
 
         Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
-        miner gets everything
+        miner gets everything.
+        Ticks after every new block.
         """
         totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
         self.nodes[blockLeaderID].totalBitcoinReward += totalFee
+
+    def rewardBitcoin(self, chain):
+        """
+        blockLeaderID: index of the leader node
+
+        Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
+        miner gets everything.
+
+        Takes the whole chain into account, doesn't tick
+        after every new block.
+        """
+        for b in chain:
+            self.nodes[b.minerID].totalBitcoinReward += b.totalFee
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """
@@ -137,6 +170,39 @@ class Environment:
         else:
             self.nFruitsInWindow += (head.nFruits + 1) # +1 is the implicit fruit (see paper)
 
+    def rewardFruitchain(self, chain):
+        """
+        blockLeaderID: index of the leader node
+
+        Distributes rewards to miners according to Fruitchain rewarding scheme
+        (see paper)
+        """
+        if chain.length < self.k + 2:
+            return
+
+        for b in chain[1:self.k+1]:
+            self.nFruitsInWindow += b.nFruits + 1 # +1 is the implicity fruit
+
+        for _b in chain[self.k+1:]:
+            # 1. Fetch the totalFee from head and award its miner
+            x = _b.totalFee
+            self.nodes[_b.minerID].totalFruitchainReward += (self.c1)*x
+            R = (1-self.c1)*x
+            # 2. Calculate 'normal' reward
+            n0 = R / self.nFruitsInWindow
+            # 3. Iterate over last k blocks and distribute rewards to miners
+            for b in chain[-self.k-1:-1]:
+                for f in b.fruits:
+                    l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
+                    dL = self.c3 * (1 - l/(self.k-1))
+                    self.nodes[f.minerID].totalFruitchainReward += n0*(1 - self.c2 + dL)
+                    self.nodes[b.minerID].totalFruitchainReward += n0*(self.c2 - dL)
+                self.nodes[b.minerID].totalFruitchainReward += n0 # reward of the implicit fruit goes to block miner
+            # 4. Slide the window and adjust the number of fruits
+            self.nFruitsInWindow -= (chain[-self.k-1].nFruits + 1)
+            self.nFruitsInWindow += (_b.nFruits + 1)
+
+
 class Node:
     def __init__(self, _id=0, hashFrac=1, env=Environment()):
         '''
@@ -154,20 +220,19 @@ class Node:
         self.validFruits = defaultdict(set)
         self.fruitsInChain = {}
         self.hashFrac =  hashFrac
+        self.receivedMessages = []
 
         # simulator related parameters
         self.environment = env
         self.k = self.environment.k
         # total blocks mined by the node
-        self.nBlocksMined = 0
+        self.totalBlockMined = 0
         # total fruits mined by the node
-        self.nFruitsMined = 0
+        self.totalFruitMined = 0
         # total reward received by the node acc. Bitcoin sceheme
         self.totalBitcoinReward = 0
         # total reward received by the node acc. Fruitchain sceheme and other related params
         self.totalFruitchainReward = 0
-        # expected # of rounds between any 2 block of this node
-        self.expectedBlockInterval = ceil( 1 / ( self.environment.p * self.hashFrac ))
 
     def mineFruit(self, roundNum):
         '''
@@ -178,7 +243,6 @@ class Node:
         fruit = Fruit(self.id, roundNum, hangIndex)
         self.validFruits[fruit.hangBlockHeight].add(fruit)
 
-        self.nFruitsMined += 1
         #print("Node:" + str(self.id) + " mined a fruit!" )
         return fruit
 
@@ -189,7 +253,7 @@ class Node:
 
         TODO:There can be an upper bound on # of fruits per block later
         '''
-        # 1. Do tx selection
+        # 1. Extract fruits and do tx selection
         freshFruits = self.getFreshFruits()
         block = Block(self.id, roundNum, freshFruits, [])
         # self.defaultTxSelection(roundNum, block)
@@ -201,22 +265,21 @@ class Node:
             f.contBlockHeight = self.blockChain.length
             self.fruitsInChain[hash(f)] = hash(block)
 
-        self.nBlocksMined += 1
         #print("Node:" + str(self.id) + " mined a block!" )
         return block
 
     def deliver(self, msg):
         '''
         Deliver the received msg and process it according to its type,
-        i.e., either put the fruit into the set or add the block to chain
+        If it's fruit, put it to set of valid fruits.
+        If it's chain, adapt it if it's longer than the local chain
         '''
-        b, f = msg[0], msg[1]
-        if f != None:
-            self.validFruits[f.hangBlockHeight].add(f)
-        if b != None and b != self.blockChain[-1]:
-            self.blockChain.append(b)
-            for fruit in b.fruits:
-                self.fruitsInChain[hash(fruit)] = b.height
+        if type(msg) is Fruit:
+            self.validFruits[msg.hangBlockHeight].add(msg)
+            return
+        if msg[0].length > self.blockChain.length:
+            self.blockChain = copy.deepcopy(msg[0])
+            self.fruitsInChain = copy.deepcopy(msg[1])
 
     def getFreshFruits(self):
         '''

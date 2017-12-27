@@ -161,7 +161,10 @@ class TestEnvironment(unittest.TestCase):
         b2 has a 2 fruits. They both hang from genesis.
         b3 has 100 tx fee.
         Let k = 2 and have a different miner for each fruit/block.
+
+        TODO: Fix this acc. to new delivery scheme
         '''
+
         nodes = []
         for i in range(0, 6):
             nodes.append(Node(i))
@@ -169,47 +172,27 @@ class TestEnvironment(unittest.TestCase):
         env.initializeNodes(nodes)
         env.k = 2
 
-        # Miner0 mines a fruit
-        f1 = nodes[0].mineFruit(1)
+        # miner0 mines f1, miner1 mines b1 and puts it in it
+        f1 = Fruit(0, 1, 0)
         f1.contBlockHeight = 2
-        f1.hangBlockHeight = 1
-        for node in nodes:
-            node.deliver((None, f1))
+        b1 = Block(1, 0, {f1})
 
-        # Miner1 mines a b1, puts f1 in it
-        b1 = nodes[1].mineBlock(2)
-        for node in nodes:
-            node.deliver((b1, None))
-
-        # Resp. miner2 mines f2 and miner3 mines f3
-        f2 = nodes[2].mineFruit(3)
-        f3 = nodes[3].mineFruit(4)
+        # miner2 mines f2, miner3 mines f3, miner4 mines b2 and puts fruits in it
+        f2, f3 = Fruit(2, 1, 0), Fruit(3, 1, 0)
         f2.contBlockHeight = 3
-        f2.hangBlockHeight = 1
         f3.contBlockHeight = 3
-        f3.hangBlockHeight = 1
-        for node in nodes:
-            node.deliver((None, f2))
-        for node in nodes:
-            node.deliver((None, f3))
+        b2 = Block(4, 0, {f2, f3})
 
-        # Miner4 mines b2, puts f2 and f3 in it
-        b2 = nodes[4].mineBlock(5)
-        for node in nodes:
-            node.deliver((b2, None))
+        # miner3 mines b3 which has a total fee of 100
+        b3 = Block(5)
+        b3.totalFee = 100
 
-        # Env supplies a tx with fee 100, miner5 takes it in a block
-        env.unprocessedTxs.append(Transaction(5, 100, 1))
-        env.nFruitsInWindow = 5
-
-        b3 = nodes[5].mineBlock(6)
-        for node in nodes:
-            node.deliver((b3, None))
-
-        # Since k = 2 and we mined the 3rd block, rewards should have been distributed
-        # We have (1+1) + (2+1) = 5 fruits in this window. +1 is the implicit fruit
-        env.nFruitsInWindow = 5
-        env.rewardFruitchain(5)
+        chain = Blockchain()
+        chain.append(b1)
+        chain.append(b2)
+        chain.append(b3)
+        
+        env.rewardFruitchain(chain)
 
         # The following values are calculated by hand acc. to Fig 4 in Fruitchain Impl. paper
         self.assertEqual(round(nodes[0].totalFruitchainReward, 3), 18.018)
