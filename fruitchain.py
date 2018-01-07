@@ -174,6 +174,7 @@ class Node:
         Mine the structure by updating its mineRound parameter,
         then add it to validFruits and broadcast to network
         '''
+        # as far as possible
         hangIndex = max(1, self.blockChain.length - self.k) - 1
         fruit = Fruit(self.id, roundNum, hangIndex)
         self.validFruits[fruit.hangBlockHeight].add(fruit)
@@ -193,7 +194,7 @@ class Node:
         freshFruits = self.getFreshFruits()
         block = Block(self.id, roundNum, freshFruits, [])
         # self.defaultTxSelection(roundNum, block)
-        self.selectAllTxs(roundNum, block)
+        # self.selectAllTxs(roundNum, block)
         # 2. Append the block, update fruits in it
         self.blockChain.append(block)
         for f in freshFruits:
@@ -221,14 +222,13 @@ class Node:
     def getFreshFruits(self):
         '''
         Returns the fruits that are recent w.r.t to chain
-        (i.e., they hang from one the last K blocks and not already in chain)
+        Fresh fruits hang from one the last K blocks and not already in chain,
+        i.e., contblockHeight - hangBlockHeight >= k-1
         '''
         fresh = set()
-        lastValidHangBlockHeight = max(1, self.blockChain.length-self.k)
-        # Get rid of fruits that lost their recency. Note that a fruit can not become recent once it has lost it. Chain is ever-growing.
-        self.validFruits.pop(lastValidHangBlockHeight-1, None)
+        lastValidHangBlockHeight = max(1, self.blockChain.length - self.k + 1)
         # Fruit can hang from the head of chain
-        for pos in range(lastValidHangBlockHeight, self.blockChain.length+1):
+        for pos in range(lastValidHangBlockHeight, self.blockChain.length + 1):
             for f in self.validFruits[pos]:
                 if hash(f) not in self.fruitsInChain:
                     fresh.add(f)

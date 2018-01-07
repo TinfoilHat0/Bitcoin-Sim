@@ -46,7 +46,7 @@ class Block:
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = 0 #sum of fees in txs set
+        self.totalFee = 100 #sum of fees in txs set
         self.height = 1 # index + 1
 
         self.nFruits = len(fruits)

@@ -67,6 +67,15 @@ class TestNode(unittest.TestCase):
         freshFruits = node.getFreshFruits()
         self.assertEqual(node.validFruits[1], freshFruits)
 
+        # After adding some blocks, they should lose their recencyc (default k is 16)
+        for i in range(16):
+            node.blockChain.append(Block())
+
+        freshFruits = node.getFreshFruits()
+        self.assertEqual(set(), freshFruits)
+
+
+
     def test_blockMining(self):
         '''
         Mine a block in round 3, see if it's added
@@ -104,7 +113,6 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(env.fruitLeaderProbs, [0.15, 0.1, 0.25, 0.5])
 
 
-
     def test_step(self):
         '''
         Environment runs a round
@@ -138,19 +146,13 @@ class TestEnvironment(unittest.TestCase):
         env.generateTxs(1)
         self.assertEqual(len(env.unprocessedTxs), 105)
         # Node mines a block in rnd2 which should contain b.size txs
-        node.mineBlock(2)
-        b = node.blockChain[1]
-        remainingTxs = max(0, 105 - b.size)
+        b = Block(1)
+        node.defaultTxSelection(1, b)
         self.assertEqual(len(b.txs) , min(b.size, 105))
-        self.assertEqual(len(env.processedTxs), min(b.size, 105))
-        self.assertEqual(len(env.unprocessedTxs), remainingTxs)
 
-        # Node mines the next block in rnd3 which should contain remainingTxs
-        node.mineBlock(3)
-        b = node.blockChain[2]
-        self.assertEqual(len(b.txs), remainingTxs)
         self.assertEqual(len(env.processedTxs), 105)
         self.assertEqual(len(env.unprocessedTxs), 0)
+
 
     def test_rewardFruitchain(self):
         '''
