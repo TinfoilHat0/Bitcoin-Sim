@@ -1,3 +1,4 @@
+import random
 #coding: utf-8
 class Transaction:
     def __init__(self, bcastRound, fee, size=1):
@@ -46,7 +47,7 @@ class Block:
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = 100 #sum of fees in txs set
+        self.totalFee = 10 #sum of fees in txs set
         self.height = 1 # index + 1
 
         self.nFruits = len(fruits)

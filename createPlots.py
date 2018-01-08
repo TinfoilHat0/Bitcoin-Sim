@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 
 def plotMinerRewards(filename):
     """ file format: (minerID, hashFracs, nBlocksMined, bitcoinReward, fruitchainRewards) """
-    filename += "_rewards"
-    log = np.loadtxt(filename, delimiter=",")
+    log = np.loadtxt(filename + "_rewards", delimiter=",")
 
     hashFracs = []
     blocksMined = []
@@ -31,7 +30,6 @@ def plotMinerRewards(filename):
 
     totalFruitchainReward = sum(fruitchainRewards)
     fruitchainRewards = [i/totalFruitchainReward for i in fruitchainRewards]
-
 
     N = len(hashFracs)
     ind = np.arange(N)
@@ -59,12 +57,18 @@ def plotMinerRewards(filename):
             ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, str(round(h, 2)),
             ha='center', va='bottom')
 
-    #autolabel(rects1)
-    #autolabel(rects2)
-    #autolabel(rects3)
-    #autolabel(rects4)
+    plt.savefig(filename + "_rewards.png", bbox_inches='tight')
 
-    plt.savefig(filename + ".png", bbox_inches='tight')
+    # Also calculate unfairness metric for both rewarding schemes
+    unFairnessBitcoin, unFairnessFruit = 0, 0
+    for i in range(len(hashFracs)):
+        unFairnessBitcoin += abs(hashFracs[i] - bitcoinRewards[i])
+        unFairnessFruit += abs(hashFracs[i] - fruitchainRewards[i])
+
+    with open(filename + "fairnessMetric", "a") as myfile:
+        myfile.write(str(unFairnessBitcoin) + "," + str(unFairnessFruit) + "\n")
+
+
 
 def plotStatistics(filename):
     """ file format: (roundNum, nUnprocessed, nProcessed) """
@@ -99,3 +103,6 @@ def plotStatistics(filename):
     plt.legend()
     plt.savefig(filename + "_txs.png")
     plt.close()
+
+with open("test.txt", "a") as myfile:
+    myfile.write("appended text")

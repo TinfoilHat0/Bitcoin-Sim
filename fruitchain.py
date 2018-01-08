@@ -75,7 +75,7 @@ class Environment:
         #print("Round:" + str(roundNum) + " started.")
 
         # 1. Generate new txs
-        self.generateTxs(roundNum)
+        # self.generateTxs(roundNum)
 
         # 2. Pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
@@ -147,7 +147,6 @@ class Node:
         hashFrac: fraction of hash power of the node
 
         environment: environment of the pair (A, Z)
-        k: security parameter
         '''
         self.id = _id
         self.blockChain = Blockchain()
@@ -188,7 +187,6 @@ class Node:
         Append the mined block to chain, process fruits in it by updating their
         includeRound and contBlockHeight params. and broadcast the block
 
-        TODO:There can be an upper bound on # of fruits per block later
         '''
         # 1. Do tx selection
         freshFruits = self.getFreshFruits()
