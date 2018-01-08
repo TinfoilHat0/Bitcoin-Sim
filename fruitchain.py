@@ -186,7 +186,6 @@ class Node:
         '''
         Append the mined block to chain, process fruits in it by updating their
         includeRound and contBlockHeight params. and broadcast the block
-
         '''
         # 1. Do tx selection
         freshFruits = self.getFreshFruits()

@@ -68,8 +68,6 @@ def plotMinerRewards(filename):
     with open(filename + "fairnessMetric", "a") as myfile:
         myfile.write(str(unFairnessBitcoin) + "," + str(unFairnessFruit) + "\n")
 
-
-
 def plotStatistics(filename):
     """ file format: (roundNum, nUnprocessed, nProcessed) """
     filename += "_stats"
@@ -104,5 +102,21 @@ def plotStatistics(filename):
     plt.savefig(filename + "_txs.png")
     plt.close()
 
-with open("test.txt", "a") as myfile:
-    myfile.write("appended text")
+def plotFairnessMetric(filename):
+    """ file format: (FairnessMetricBitcoin, FairnessMetricFruitchain) """
+    log = np.loadtxt(filename + "fairnessMetric", delimiter=",")
+    fairnessBitcoin = []
+    fairnessFruit = []
+
+    for item in log:
+        fairnessBitcoin.append(item[0])
+        fairnessFruit.append(item[1])
+
+    plt.figure(figsize=(10,10))
+    plt.plot(fairnessBitcoin, '-y', label='Bitcoin')
+    plt.plot(fairnessFruit, '-g', label='Fruitchain')
+    plt.xlabel("Reward variance")
+    plt.ylabel("Value of metric")
+    plt.legend()
+    plt.savefig(filename + "FairnessMetric.png")
+    plt.close()

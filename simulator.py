@@ -25,7 +25,7 @@ class Simulator:
         self.k = k
         self.avgOver = avgOver
 
-        self.log = defaultdict(list) #<K, V> = ID of node, its statistics
+        self.log = defaultdict(list) # <K, V> = ID of node, its statistics
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.txRate, self.k) # Environment selects a leader each round for mining
