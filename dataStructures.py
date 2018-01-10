@@ -47,7 +47,7 @@ class Block:
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = random.randint(1, 10**3) #sum of fees in txs set
+        self.totalFee = 10 #sum of fees in txs set
         self.height = 1 # index + 1
 
         self.nFruits = len(fruits)
