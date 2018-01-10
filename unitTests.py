@@ -124,8 +124,8 @@ class TestEnvironment(unittest.TestCase):
         env.initializeNodes([node])
         b, f = env.step(1)
 
-        # node should have mined only a block)
-        self.assertEqual(f, None)
+        # node should have mined a fruit and a block
+        self.assertEqual(f, Fruit(1, 1, 0))
         self.assertEqual(b.minerID, 1)
         self.assertEqual(b.mineRound, 1)
         self.assertEqual(node.blockChain.length, 2)
@@ -147,6 +147,7 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(len(env.unprocessedTxs), 105)
         # Node mines a block in rnd2 which should contain b.size txs
         b = Block(1)
+        b.size = 10**3
         node.defaultTxSelection(1, b)
         self.assertEqual(len(b.txs) , min(b.size, 105))
 
@@ -163,6 +164,8 @@ class TestEnvironment(unittest.TestCase):
         b2 has a 2 fruits. They both hang from genesis.
         b3 has 100 tx fee.
         Let k = 2 and have a different miner for each fruit/block.
+
+        TODO: Change according to new deliver method
         '''
         nodes = []
         for i in range(0, 6):
@@ -176,12 +179,12 @@ class TestEnvironment(unittest.TestCase):
         f1.contBlockHeight = 2
         f1.hangBlockHeight = 1
         for node in nodes:
-            node.deliver((None, f1))
+            node.deliver(f1)
 
         # Miner1 mines a b1, puts f1 in it
         b1 = nodes[1].mineBlock(2)
         for node in nodes:
-            node.deliver((b1, None))
+            node.deliver(b1)
 
         # Resp. miner2 mines f2 and miner3 mines f3
         f2 = nodes[2].mineFruit(3)
@@ -191,29 +194,25 @@ class TestEnvironment(unittest.TestCase):
         f3.contBlockHeight = 3
         f3.hangBlockHeight = 1
         for node in nodes:
-            node.deliver((None, f2))
+            node.deliver(f2)
         for node in nodes:
-            node.deliver((None, f3))
+            node.deliver(f3)
 
         # Miner4 mines b2, puts f2 and f3 in it
         b2 = nodes[4].mineBlock(5)
         for node in nodes:
-            node.deliver((b2, None))
-
-        # Env supplies a tx with fee 100, miner5 takes it in a block
-        env.unprocessedTxs.append(Transaction(5, 100, 1))
-        env.nFruitsInWindow = 5
+            node.deliver(b2)
 
         b3 = nodes[5].mineBlock(6)
         for node in nodes:
-            node.deliver((b3, None))
+            node.deliver(b3)
 
         # Since k = 2 and we mined the 3rd block, rewards should have been distributed
-        # We have (1+1) + (2+1) = 5 fruits in this window. +1 is the implicit fruit
+        # We have (1+1) + (2+1) = 5 fruits in this window. +1 is due to implicit fruit.
         env.nFruitsInWindow = 5
         env.rewardFruitchain(5)
 
-        # The following values are calculated by hand acc. to Fig 4 in Fruitchain Impl. paper
+        # The following values are calculated by hand acc. to Fig 4 in Fruitchain Implementation paper
         self.assertEqual(round(nodes[0].totalFruitchainReward, 3), 18.018)
         self.assertEqual(round(nodes[1].totalFruitchainReward, 3), 21.582)
         self.assertEqual(round(nodes[2].totalFruitchainReward, 2), 17.82)

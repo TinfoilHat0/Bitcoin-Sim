@@ -68,33 +68,34 @@ class Environment:
     def step(self, roundNum):
         '''
         roundNum: number of the current round
-        1. Env. generates txs
-        2. Attempt to mine
-        3. Send mining results to all nodes
+
+        Nodes attempt to mine a fruit and a block independently,
+        they broadcast what they have mined
         '''
-        #print("Round:" + str(roundNum) + " started.")
 
-        # 1. Generate new txs
-        # self.generateTxs(roundNum)
-
-        # 2. Pick an ID for the miner of the block in this round. If ID is n, nobody mines
+        # pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
+
         b, f = None, None
+
+        if fruitLeaderID != self.n:
+            f = self.nodes[fruitLeaderID].mineFruit(roundNum)
+            # Bcast the fruit
+            for node in self.nodes:
+                if node.id != fruitLeaderID:
+                    node.deliver(f)
+
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
             # Trigger reward schemes
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
-        if fruitLeaderID != self.n and blockLeaderID != fruitLeaderID: # same node can't mine both a block and a fruit
-            f = self.nodes[fruitLeaderID].mineFruit(roundNum)
-
-        # 3. Broadcast what's been mined
-        if b != None or f != None:
+            # Bcast the block
             for node in self.nodes:
-                node.deliver((b, f))
+                if node.id != blockLeaderID:
+                    node.deliver(b)
 
-        #print("Round:" + str(roundNum) + " ended.")
         return b, f
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
@@ -173,13 +174,12 @@ class Node:
         Mine the structure by updating its mineRound parameter,
         then add it to validFruits and broadcast to network
         '''
-        # as far as possible
-        hangIndex = max(1, self.blockChain.length - self.k) - 1
-        fruit = Fruit(self.id, roundNum, hangIndex)
+        # as close as possible
+        hangBlockHeight = self.blockChain.length
+        fruit = Fruit(self.id, roundNum, hangBlockHeight)
         self.validFruits[fruit.hangBlockHeight].add(fruit)
 
         self.nFruitsMined += 1
-        #print("Node:" + str(self.id) + " mined a fruit!" )
         return fruit
 
     def mineBlock(self, roundNum):
@@ -187,12 +187,10 @@ class Node:
         Append the mined block to chain, process fruits in it by updating their
         includeRound and contBlockHeight params. and broadcast the block
         '''
-        # 1. Do tx selection
+        # 1. Get fresh fruits
         freshFruits = self.getFreshFruits()
+        # 2. Append the block, update fields of included fruits
         block = Block(self.id, roundNum, freshFruits, [])
-        # self.defaultTxSelection(roundNum, block)
-        # self.selectAllTxs(roundNum, block)
-        # 2. Append the block, update fruits in it
         self.blockChain.append(block)
         for f in freshFruits:
             f.includeRound = roundNum
@@ -200,7 +198,6 @@ class Node:
             self.fruitsInChain[hash(f)] = hash(block)
 
         self.nBlocksMined += 1
-        #print("Node:" + str(self.id) + " mined a block!" )
         return block
 
     def deliver(self, msg):
@@ -208,13 +205,12 @@ class Node:
         Deliver the received msg and process it according to its type,
         i.e., either put the fruit into the set or add the block to chain
         '''
-        b, f = msg[0], msg[1]
-        if f != None:
-            self.validFruits[f.hangBlockHeight].add(f)
-        if b != None and b != self.blockChain[-1]:
-            self.blockChain.append(b)
-            for fruit in b.fruits:
-                self.fruitsInChain[hash(fruit)] = b.height
+        if type(msg) is Fruit:
+            self.validFruits[msg.hangBlockHeight].add(msg)
+        if type(msg) is Block and msg != self.blockChain[-1]: # avoiding duplication in case self-delivery
+            self.blockChain.append(msg)
+            for fruit in msg.fruits:
+                self.fruitsInChain[hash(fruit)] = msg.height
 
     def getFreshFruits(self):
         '''

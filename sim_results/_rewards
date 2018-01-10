@@ -1,7 +1,3 @@
-# n:5 t:0 r:20 p:1 pF:1
+# n:1 t:0 r:6000 p:0.016666666666666666 pF:0.1
 # id,HashFrac,nBlocksMined,nFruitsMined,totalBitcoinReward,totalFruitchainReward
-0,0.2,5,2,50,9
-1,0.2,5,2,50,8
-2,0.2,5,3,50,10
-3,0.2,2,6,20,7
-4,0.2,3,5,30,8
+0,1.0,96,603,9600,17513

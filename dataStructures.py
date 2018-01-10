@@ -18,13 +18,13 @@ class Transaction:
 
 
 class Fruit:
-    def __init__(self, minerID=-1, mineRound=0, hangIndex=0):
+    def __init__(self, minerID=-1, mineRound=0, hangBlockHeight=0):
         '''
         minerID: id of miner who mined the fruit
         pos: -index- of the block in blockchain which this fruit hangs from
         '''
         self.minerID = minerID
-        self.hangBlockHeight = hangIndex+1 # height of the block that this fruit hangs from
+        self.hangBlockHeight = hangBlockHeight # height of the block that this fruit hangs from
         self.mineRound = mineRound
         self.includeRound = 0
         self.contBlockHeight = 0 # height of the block that contains the fruit
@@ -47,11 +47,11 @@ class Block:
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = 10 #sum of fees in txs set
-        self.height = 1 # index + 1
+        self.totalFee = 100 #sum of fees in txs set
+        self.height = -1 # height in blockchain
 
         self.nFruits = len(fruits)
-        self.size = 10**4  # in bytes
+        self.size = 0 # in bytes
 
     def __hash__(self):
         # minerID||mineRound||1 uniquely determines a block where || denotes concatanetion
