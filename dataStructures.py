@@ -51,7 +51,7 @@ class Block:
         self.height = -1 # height in blockchain
 
         self.nFruits = len(fruits)
-        self.size = 0 # in bytes
+        self.size = 10 # in bytes
 
     def __hash__(self):
         # minerID||mineRound||1 uniquely determines a block where || denotes concatanetion

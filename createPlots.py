@@ -2,6 +2,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+def plotFruitPerBlock(filename):
+    """
+        row format: fruitPerBlock
+        with first row being theoretical expectation
+    """
+    log = np.loadtxt(filename + "StatsData", delimiter=",")
+    expected = []
+    measured = []
+
+    for row in log[1:]:
+        measured.append(row)
+        expected.append(log[0])
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expected, '-b', label='Expected')
+    plt.plot(measured, '-r', label='Measured')
+    plt.xlabel("Experiments")
+    plt.ylabel("Fruits per block")
+
+    plt.legend()
+    plt.savefig(filename + "StatsData.png")
+    plt.close()
+
 def plotMinerRewards(filename):
     """ file format: (minerID, hashFracs, nBlocksMined, bitcoinReward, fruitchainRewards) """
     log = np.loadtxt(filename + "_rewards", delimiter=",")
@@ -92,7 +116,6 @@ def plotStatistics(filename):
         bitcoinReward.append(item[4])
         fruitchainReward.append(item[5])
 
-    # 1. Plot txs
     plt.figure(figsize=(10,10))
     plt.plot(processedTxs, '-b', label='Processed Txs')
     plt.plot(unprocessedTxs, '-r', label='Unprocessed Txs')

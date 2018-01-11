@@ -25,7 +25,8 @@ class Simulator:
         self.k = k
         self.avgOver = avgOver
 
-        self.log = defaultdict(list) # <K, V> = ID of node, its statistics
+        self.rewardLog = defaultdict(list) # <K, V> = ID of node, its statistics
+        self.statsLog = [] # log to keep some stats regarding the blockchain
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.txRate, self.k) # Environment selects a leader each round for mining
@@ -45,25 +46,41 @@ class Simulator:
             print('Simulation for r='+str(self.r)+ ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
             for node in self.nodes:
-                self.log[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
+                self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
+            # Arbitrarily choose a node's blockchain for statistics for they all have the same chain
+            chain = self.nodes[0].blockChain
+            avgFruitPerBlock = 0
+            for b in chain:
+                avgFruitPerBlock += b.nFruits
+            avgFruitPerBlock /= (chain.length-1) # excluding the genesis
+            self.statsLog.append(avgFruitPerBlock)
         print('Writing results to file: ' + filename)
-        self.saveData(filename)
+        # self.saveRewardsData(filename)
+        self.saveStatsData(filename)
         print("Finished!")
 
-    def saveData(self, filename):
-        # 1. Save (hashFrac, totalBitcoinReward, totalFruitchainReward)
-        file = open(filename + "_rewards", 'w')
+    def saveRewardData(self, filename):
+        file = open(filename + "RewardData", 'w')
         file.write("# n:" + str(self.n) + " t:" + str(self.t) + " r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
         file.write("# id," + "HashFrac," +  "nBlocksMined,"  + "nFruitsMined,"  +  "totalBitcoinReward," + "totalFruitchainReward" + "\n")
 
         for node in self.environment.nodes:
             avgStats = [0, 0, 0, 0]
-            for tmp in self.log[node.id]:
+            for tmp in self.rewardLog[node.id]:
                 for i in range(len(tmp)):
                     avgStats[i] += tmp[i]
             for i in range(len(avgStats)):
-                avgStats[i] = ceil(avgStats[i]/self.avgOver)
+                avgStats[i] = ceil(avgStats[i] / self.avgOver)
 
             file.write(str(node.id) + "," + str(node.hashFrac) + "," + str(avgStats[0]) + ","
             + str(avgStats[1]) + "," + str(avgStats[2]) + "," + str(round(avgStats[3])) + "\n")
         file.close()
+
+    def saveStatsData(self, filename):
+        file = open(filename + "StatsData", 'w')
+        file.write("# n:" + str(self.n) + " t:" + str(self.t) + " r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
+        file.write("#Avg. number of fruits per block. First line is theoretical expectation." + "\n")
+
+        file.write(str(self.pF / self. p) + "\n")
+        for log in self.statsLog:
+            file.write(str(log) + "\n")
