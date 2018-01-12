@@ -45,15 +45,16 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r='+str(self.r)+ ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
+            # Save reward related statistics
             for node in self.nodes:
                 self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
-            # Arbitrarily choose a node's blockchain for statistics for they all have the same chain
-            chain = self.nodes[0].blockChain
-            avgFruitPerBlock = 0
-            for b in chain:
-                avgFruitPerBlock += b.nFruits
-            avgFruitPerBlock /= (chain.length-1) # excluding the genesis
-            self.statsLog.append(avgFruitPerBlock)
+            # Save other statistics, arbitrarily pick first node
+            node = self.nodes[0]
+            avgFruitPerBlock = self.environment.avgFruitPerBlock / (node.blockChain.length-1)
+            avgNormalFruitReward = self.environment.avgNormalFruitReward / (node.blockChain.length -1 -self.k)
+            avgRewardPerFruit = node.rewardFromFruits / node.nFruitsMined
+            avgRewardPerBlock = node.rewardFromBlocks / node.nBlocksMined
+            self.statsLog.append( (avgFruitPerBlock, avgNormalFruitReward, avgRewardPerFruit, avgRewardPerBlock) )
         print('Writing results to file: ' + filename)
         # self.saveRewardsData(filename)
         self.saveStatsData(filename)
@@ -78,9 +79,16 @@ class Simulator:
 
     def saveStatsData(self, filename):
         file = open(filename + "StatsData", 'w')
-        file.write("# n:" + str(self.n) + " t:" + str(self.t) + " r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("#Avg. number of fruits per block. First line is theoretical expectation." + "\n")
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
 
-        file.write(str(self.pF / self. p) + "\n")
+        file.write("# Avg. number of fruits per block, Avg. normal fruit reward, Avg. reward per fruit, Avg. reward per block. First line is theoretical expectations." + "\n")
+
+        avgFruitPerBlock = self.pF / self. p
+        avgNormalFruitReward = self.p * (1-self.environment.c1)*100 / ( self.k*(self.pF + self.p) ) # x = 100
+        avgRewardPerFruit = ( self.p * (1-self.environment.c1) * 100 * (1-self.environment.c2+self.environment.c3) ) / (self.pF + self.p)
+        avgRewardPerBlock = ( (1-self.environment.c1)*100*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.environment.c2-self.environment.c3) + 1) + self.environment.c1*100
+
+        file.write(str(avgFruitPerBlock) + "," + str(avgNormalFruitReward) + "," + str(avgRewardPerFruit) + "," + str(avgRewardPerBlock) + "\n")
         for log in self.statsLog:
-            file.write(str(log) + "\n")
+            file.write(",".join(map(str, log)) + "\n")

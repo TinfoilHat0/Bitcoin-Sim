@@ -34,6 +34,10 @@ class Environment:
         self.c3 = 1/100
         self.nFruitsInWindow = 0
 
+        # Stats related with simulation run
+        self.avgFruitPerBlock = 0
+        self.avgNormalFruitReward = 0
+
     def initializeNodes(self, nodes, t = 0):
         '''
         nodes: list of nodes which are in the environment
@@ -76,7 +80,6 @@ class Environment:
         # pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
-
         b, f = None, None
 
         if fruitLeaderID != self.n:
@@ -88,6 +91,7 @@ class Environment:
 
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
+            self.avgFruitPerBlock += b.nFruits
             # Trigger reward schemes
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
@@ -121,17 +125,23 @@ class Environment:
             # 1. Fetch the totalFee from head and award its miner
             x = head.totalFee
             self.nodes[blockLeaderID].totalFruitchainReward += (self.c1)*x
+            self.nodes[blockLeaderID].rewardFromBlocks += (self.c1)*x
             R = (1-self.c1)*x
             # 2. Calculate 'normal' reward
             n0 = R / self.nFruitsInWindow
+            self.avgNormalFruitReward += n0
             # 3. Iterate over last k blocks and distribute rewards to miners
             for b in blockChain[-self.k-1:-1]:
                 for f in b.fruits:
                     l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
                     dL = self.c3 * (1 - l/(self.k-1))
                     self.nodes[f.minerID].totalFruitchainReward += n0*(1 - self.c2 + dL)
+                    self.nodes[f.minerID].rewardFromFruits += n0*(1 - self.c2 + dL)
+
                     self.nodes[b.minerID].totalFruitchainReward += n0*(self.c2 - dL)
+                    self.nodes[b.minerID].rewardFromBlocks += n0*(self.c2 - dL)
                 self.nodes[b.minerID].totalFruitchainReward += n0 # reward of the implicit fruit goes to block miner
+                self.nodes[b.minerID].rewardFromBlocks += n0
             # 4. Slide the window and adjust the number of fruits
             self.nFruitsInWindow -= (blockChain[-self.k-1].nFruits + 1)
             self.nFruitsInWindow += (head.nFruits + 1)
@@ -166,6 +176,9 @@ class Node:
         self.totalBitcoinReward = 0
         # total reward received by the node acc. Fruitchain sceheme and other related params
         self.totalFruitchainReward = 0
+        # for testing fruitchain
+        self.rewardFromFruits = 0
+        self.rewardFromBlocks = 0
         # expected # of rounds between any 2 block of this node
         self.expectedBlockInterval = ceil( 1 / ( self.environment.p * self.hashFrac ))
 

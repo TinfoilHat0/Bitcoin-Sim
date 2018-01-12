@@ -209,6 +209,7 @@ class TestEnvironment(unittest.TestCase):
 
         # Since k = 2 and we mined the 3rd block, rewards should have been distributed
         # We have (1+1) + (2+1) = 5 fruits in this window. +1 is due to implicit fruit.
+        b3.totalFee = 100
         env.nFruitsInWindow = 5
         env.rewardFruitchain(5)
 

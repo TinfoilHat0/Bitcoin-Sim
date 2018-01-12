@@ -2,29 +2,73 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
-def plotFruitPerBlock(filename):
+def plotStats(filename):
     """
-        row format: fruitPerBlock
-        with first row being theoretical expectation
+        row format: fruitPerBlock, normalFruitReward
+        with first row being theoretical expectations
     """
     log = np.loadtxt(filename + "StatsData", delimiter=",")
-    expected = []
-    measured = []
+
+    measuredFruitPerBlock = []
+    measuredNormalFruitReward = []
+    measuredRewardPerFruit = []
+    measuredRewardPerBlock = []
+
+    expectedFruitPerBlock = []
+    expectedNormalFruitReward = []
+    expectedRewardPerFruit = []
+    expectedRewardPerBlock = []
+
 
     for row in log[1:]:
-        measured.append(row)
-        expected.append(log[0])
+        measuredFruitPerBlock.append(row[0])
+        measuredNormalFruitReward.append(row[1])
+        measuredRewardPerFruit.append(row[2])
+        measuredRewardPerBlock.append(row[3])
+
+        expectedFruitPerBlock.append(log[0][0])
+        expectedNormalFruitReward.append(log[0][1])
+        expectedRewardPerFruit.append(log[0][2])
+        expectedRewardPerBlock.append(log[0][3])
+
 
     plt.figure(figsize=(10,10))
-    plt.plot(expected, '-b', label='Expected')
-    plt.plot(measured, '-r', label='Measured')
+    plt.plot(expectedFruitPerBlock, '-b', label='Expected')
+    plt.plot(measuredFruitPerBlock, '-r', label='Measured')
     plt.xlabel("Experiments")
     plt.ylabel("Fruits per block")
-
     plt.legend()
-    plt.savefig(filename + "StatsData.png")
+    plt.savefig(filename + "Lemma3.png")
     plt.close()
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expectedNormalFruitReward, '-b', label='Expected')
+    plt.plot(measuredNormalFruitReward, '-r', label='Measured')
+    plt.xlabel("Experiments")
+    plt.ylabel("Normal reward per fruit")
+    plt.legend()
+    plt.savefig(filename + "Corollary2.png")
+    plt.close()
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expectedRewardPerFruit, '-b', label='Expected')
+    plt.plot(measuredRewardPerFruit, '-r', label='Measured')
+    plt.xlabel("Experiments")
+    plt.ylabel("Reward per fruit")
+    plt.legend()
+    plt.savefig(filename + "Lemma4.png")
+    plt.close()
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expectedRewardPerBlock, '-b', label='Expected')
+    plt.plot(measuredRewardPerBlock, '-r', label='Measured')
+    plt.xlabel("Experiments")
+    plt.ylabel("Reward per block")
+    plt.legend()
+    plt.savefig(filename + "Lemma5.png")
+    plt.close()
+
+
 
 def plotMinerRewards(filename):
     """ file format: (minerID, hashFracs, nBlocksMined, bitcoinReward, fruitchainRewards) """
