@@ -29,7 +29,7 @@ class Simulator:
         self.statsLog = [] # log to keep some stats regarding the blockchain
 
     def initializeSim(self):
-        self.environment = Environment(self.p, self.pF, self.txRate, self.k) # Environment selects a leader each round for mining
+        self.environment = Environment(self.p, self.pF, self.txRate, self.k, self.r) # Environment selects a leader each round for mining
         self.nodes = []
         for i in range(self.n):
             self.nodes.append(Node(i, self.hashFracs[i], self.environment))
@@ -48,16 +48,13 @@ class Simulator:
             # Save reward related statistics
             for node in self.nodes:
                 self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
-            # Save other statistics, arbitrarily pick first node
-            node = self.nodes[0]
-            avgFruitPerBlock = self.environment.avgFruitPerBlock / (node.blockChain.length-1)
-            avgNormalFruitReward = self.environment.avgNormalFruitReward / (node.blockChain.length -1 -self.k)
-            avgRewardPerFruit = node.rewardFromFruits / node.nFruitsMined
-            avgRewardPerBlock = node.rewardFromBlocks / node.nBlocksMined
-            self.statsLog.append( (avgFruitPerBlock, avgNormalFruitReward, avgRewardPerFruit, avgRewardPerBlock) )
+            # Save other statistics
+            self.statsLog.append( (self.environment.avgFruitPerBlock, self.environment.avgNormalFruitReward, self.environment.avgRewardPerFruit, self.environment.avgRewardPerBlock) )
+            self.saveUtilityData(filename)
         print('Writing results to file: ' + filename)
         # self.saveRewardsData(filename)
-        self.saveStatsData(filename)
+        # self.saveStatsData(filename)
+
         print("Finished!")
 
     def saveRewardData(self, filename):
@@ -81,14 +78,32 @@ class Simulator:
         file = open(filename + "StatsData", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-
         file.write("# Avg. number of fruits per block, Avg. normal fruit reward, Avg. reward per fruit, Avg. reward per block. First line is theoretical expectations." + "\n")
 
-        avgFruitPerBlock = self.pF / self. p
-        avgNormalFruitReward = self.p * (1-self.environment.c1)*100 / ( self.k*(self.pF + self.p) ) # x = 100
-        avgRewardPerFruit = ( self.p * (1-self.environment.c1) * 100 * (1-self.environment.c2+self.environment.c3) ) / (self.pF + self.p)
-        avgRewardPerBlock = ( (1-self.environment.c1)*100*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.environment.c2-self.environment.c3) + 1) + self.environment.c1*100
-
-        file.write(str(avgFruitPerBlock) + "," + str(avgNormalFruitReward) + "," + str(avgRewardPerFruit) + "," + str(avgRewardPerBlock) + "\n")
+        file.write(str(self.environment.expFruitPerBlock) + "," + str(self.environment.expNormalFruitReward) + "," + str(self.environment.expRewardPerFruit) + "," + str(self.environment.expRewardPerBlock) + "\n")
         for log in self.statsLog:
             file.write(",".join(map(str, log)) + "\n")
+
+        file.close()
+
+    def saveUtilityData(self, filename):
+        # currently assuming no cost
+        node = self.nodes[0] # Arbitrarily pick node 0
+
+        file = open(filename + "UtilityDataBTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Value of utility function by round. Measured, Expecetd" + "\n")
+
+        for log in node.btcRewardByRound:
+            file.write(",".join(map(str, log)) + "\n")
+        file.close()
+
+        file = open(filename + "UtilityDataFTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Value of utility function by round. Measured, Expecetd" + "\n")
+
+        for log in node.ftcRewardByRound:
+            file.write(",".join(map(str, log)) + "\n")
+        file.close()

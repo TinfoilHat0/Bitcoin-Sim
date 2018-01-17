@@ -164,8 +164,6 @@ class TestEnvironment(unittest.TestCase):
         b2 has a 2 fruits. They both hang from genesis.
         b3 has 100 tx fee.
         Let k = 2 and have a different miner for each fruit/block.
-
-        TODO: Change according to new deliver method
         '''
         nodes = []
         for i in range(0, 6):

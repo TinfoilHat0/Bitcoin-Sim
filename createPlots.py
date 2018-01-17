@@ -2,6 +2,46 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+def plotUtility(filename):
+    """
+        row format: measuredUtility, expectedUtility
+    """
+    log = np.loadtxt(filename + "UtilityDataBTC", delimiter=",")
+    measuredUtilityBTC = []
+    expectedUtilityBTC = []
+
+    for row in log:
+        measuredUtilityBTC.append(row[0])
+        expectedUtilityBTC.append(row[1])
+
+    log = np.loadtxt(filename + "UtilityDataFTC", delimiter=",")
+    measuredUtilityFTC = []
+    expectedUtilityFTC = []
+
+    for row in log:
+        measuredUtilityFTC.append(row[0])
+        expectedUtilityFTC.append(row[1])
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expectedUtilityBTC, '-b', label='Expected')
+    plt.plot(measuredUtilityBTC, '-r', label='Measured')
+    plt.xlabel("Snapshots")
+    plt.ylabel("Value of utility")
+    plt.legend()
+    plt.savefig(filename + "BTCUtility.png")
+    plt.close()
+
+    plt.figure(figsize=(10,10))
+    plt.plot(expectedUtilityFTC, '-b', label='Expected')
+    plt.plot(measuredUtilityFTC, '-r', label='Measured')
+    plt.xlabel("Snapshots")
+    plt.ylabel("Value of utility")
+    plt.legend()
+    plt.savefig(filename + "FTCUtility.png")
+    plt.close()
+
+
 def plotStats(filename):
     """
         row format: fruitPerBlock, normalFruitReward
@@ -33,6 +73,9 @@ def plotStats(filename):
 
 
     plt.figure(figsize=(10,10))
+    axes = plt.gca()
+    axes.set_ylim([0, 3*expectedFruitPerBlock[0]])
+    #axes.set_xlim([1, len(expectedFruitPerBlock)])
     plt.plot(expectedFruitPerBlock, '-b', label='Expected')
     plt.plot(measuredFruitPerBlock, '-r', label='Measured')
     plt.xlabel("Experiments")
@@ -42,6 +85,9 @@ def plotStats(filename):
     plt.close()
 
     plt.figure(figsize=(10,10))
+    axes = plt.gca()
+    axes.set_ylim([0, 3*expectedNormalFruitReward[0]])
+    #axes.set_xlim([1, len(expectedNormalFruitReward)])
     plt.plot(expectedNormalFruitReward, '-b', label='Expected')
     plt.plot(measuredNormalFruitReward, '-r', label='Measured')
     plt.xlabel("Experiments")
@@ -51,6 +97,9 @@ def plotStats(filename):
     plt.close()
 
     plt.figure(figsize=(10,10))
+    axes = plt.gca()
+    axes.set_ylim([0, 3*expectedRewardPerFruit[0]])
+    #axes.set_xlim([1, len(expectedRewardPerFruit)])
     plt.plot(expectedRewardPerFruit, '-b', label='Expected')
     plt.plot(measuredRewardPerFruit, '-r', label='Measured')
     plt.xlabel("Experiments")
@@ -60,6 +109,9 @@ def plotStats(filename):
     plt.close()
 
     plt.figure(figsize=(10,10))
+    axes = plt.gca()
+    axes.set_ylim([0, 3*expectedRewardPerBlock[0]])
+    #axes.set_xlim([1, len(expectedRewardPerBlock)])
     plt.plot(expectedRewardPerBlock, '-b', label='Expected')
     plt.plot(measuredRewardPerBlock, '-r', label='Measured')
     plt.xlabel("Experiments")

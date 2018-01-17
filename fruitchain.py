@@ -7,19 +7,20 @@ import numpy as np
 import bisect
 
 class Environment:
-    def __init__(self, p = 1, pF = 1, txRate = 5, k = 16):
+    def __init__(self, p = 1, pF = 1, txRate = 5, k = 16, r = -1):
         '''
         p: pr. of mining a block in a rounds
         pF: pr. of mining a fruit in a round
         txRate: # of txs supplied to system each round
         k: determines how far a fruit can hang
-
-        Environment of the protocol. Handles a mining process.
+        r: num. of rounds
+        Environment of the protocol. Handles mining process.
         '''
         self.p = p
         self.pF = pF
         self.txRate = txRate
         self.k = k
+        self.r = r
         self.nodes = []
         self.honestNodes = []
         self.corruptNodes = []
@@ -37,6 +38,11 @@ class Environment:
         # Stats related with simulation run
         self.avgFruitPerBlock = 0
         self.avgNormalFruitReward = 0
+        # theoretical calculations for fruitchain (see analysis paper), x=100 is expected block reward
+        self.expFruitPerBlock = self.pF / self. p
+        self.expNormalFruitReward = self.p * (1-self.c1)*100 / ( self.k*(self.pF + self.p) )
+        self.expRewardPerFruit = ( self.p * (1-self.c1) * 100 * (1-self.c2 + self.c3) ) / (self.pF + self.p)
+        self.expRewardPerBlock = ( (1-self.c1)*100*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*100
 
     def initializeNodes(self, nodes, t = 0):
         '''
@@ -100,7 +106,26 @@ class Environment:
                 if node.id != blockLeaderID:
                     node.deliver(b)
 
+        # keep track of received and expected rewards for every 1/p rounds
+        if roundNum % ceil(1/self.p) == 0:
+            for node in self.nodes:
+                expectedBtcReward = roundNum * 100 * node.prMiningBlock
+                node.btcRewardByRound.append( (node.totalBitcoinReward, expectedBtcReward ) )
+
+                expectedFtcReward = roundNum * ( node.prMiningBlock * self.expRewardPerBlock + node.prMiningFruit * self.expRewardPerFruit )
+                node.ftcRewardByRound.append( (node.totalFruitchainReward, expectedFtcReward) )
+
+        # update some statistics at the end of last round
+        if roundNum == self.r:
+            # arbitrarily choose node 0 for these stats (we have consensus on chain so doesn't matter)
+            node = self.nodes[0]
+            self.avgFruitPerBlock  /= (node.blockChain.length-1)
+            self.avgNormalFruitReward /= (node.blockChain.length -1 -self.k)
+            self.avgRewardPerFruit = node.rewardFromFruits / node.nFruitsMined
+            self.avgRewardPerBlock = node.rewardFromBlocks / node.nBlocksMined
+
         return b, f
+
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
         """
@@ -111,6 +136,7 @@ class Environment:
         """
         totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
         self.nodes[blockLeaderID].totalBitcoinReward += totalFee
+
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """
@@ -140,6 +166,7 @@ class Environment:
 
                     self.nodes[b.minerID].totalFruitchainReward += n0*(self.c2 - dL)
                     self.nodes[b.minerID].rewardFromBlocks += n0*(self.c2 - dL)
+
                 self.nodes[b.minerID].totalFruitchainReward += n0 # reward of the implicit fruit goes to block miner
                 self.nodes[b.minerID].rewardFromBlocks += n0
             # 4. Slide the window and adjust the number of fruits
@@ -172,15 +199,21 @@ class Node:
         self.nBlocksMined = 0
         # total fruits mined by the node
         self.nFruitsMined = 0
-        # total reward received by the node acc. Bitcoin sceheme
+        # total reward received by the node acc. Bitcoin scheme
         self.totalBitcoinReward = 0
-        # total reward received by the node acc. Fruitchain sceheme and other related params
+        self.btcRewardByRound = []
+        # total reward received by the node acc. Fruitchain scheme and other related params
         self.totalFruitchainReward = 0
+        self.ftcRewardByRound = []
         # for testing fruitchain
         self.rewardFromFruits = 0
         self.rewardFromBlocks = 0
-        # expected # of rounds between any 2 block of this node
-        self.expectedBlockInterval = ceil( 1 / ( self.environment.p * self.hashFrac ))
+        # pr. of mining a block in a round
+        self.prMiningBlock =  self.environment.p * self.hashFrac
+        # pr. of mining a fruit in a round
+        self.prMiningFruit = self.environment.pF * self.hashFrac
+
+
 
     def mineFruit(self, roundNum):
         '''
