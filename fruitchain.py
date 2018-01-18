@@ -36,7 +36,7 @@ class Environment:
         self.nFruitsInWindow = 0
 
         # Hard-coded constants taken from real world data of Bitcoin
-        self.coinbaseReward = 12.5
+        self.coinbaseReward = 3.125
         self.networkHashRate = 16 * (10**5) # Th/s
         self.usdToBTC = 9 * (10**-5) # 1 USD = 0.00009 BTC
         self.costPerKWh = 18 * (10**-6) # In France, cost per KWh = 0.2 USD = 0.000018 BTC
@@ -50,8 +50,8 @@ class Environment:
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
         self.expFruitPerBlock = self.pF / self. p
         self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
-        self.expRewardPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
-        self.expRewardPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
+        self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
+        self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
 
 
 
@@ -93,7 +93,6 @@ class Environment:
         Nodes attempt to mine a fruit and a block independently,
         they broadcast what they have mined
         '''
-
         # pick an ID for the miner of the block in this round. If ID is n, nobody mines
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
@@ -117,14 +116,10 @@ class Environment:
                 if node.id != blockLeaderID:
                     node.deliver(b)
 
-        # keep track of received and expected rewards for every 1/p rounds
-        if roundNum % ceil(1/self.p) == 0:
-            for node in self.nodes:
-                expectedBtcReward = roundNum * self.coinbaseReward * node.prMiningBlock
-                node.btcRewardByRound.append( (node.totalBitcoinReward, expectedBtcReward ) )
-
-                expectedFtcReward = roundNum * ( node.prMiningBlock * self.expRewardPerBlock + node.prMiningFruit * self.expRewardPerFruit )
-                node.ftcRewardByRound.append( (node.totalFruitchainReward, expectedFtcReward) )
+        # log the value of utility in every 1/p rounds
+        for node in self.nodes:
+            node.logUtilityBTC(roundNum)
+            node.logUtilityFTC(roundNum)
 
         # update some statistics at the end of last round
         if roundNum == self.r:
@@ -132,8 +127,8 @@ class Environment:
             node = self.nodes[0]
             self.avgFruitPerBlock  /= (node.blockChain.length-1)
             self.avgNormalFruitReward /= (node.blockChain.length -1 -self.k)
-            self.avgRewardPerFruit = node.rewardFromFruits / node.nFruitsMined
-            self.avgRewardPerBlock = node.rewardFromBlocks / node.nBlocksMined
+            self.avgFTCPerFruit = node.rewardFromFruits / node.nFruitsMined
+            self.avgFTCPerBlock = node.rewardFromBlocks / node.nBlocksMined
 
         return b, f
 
@@ -206,13 +201,14 @@ class Node:
         self.environment = env
         self.k = self.environment.k
         self.calculateCost()
+        self.threshold = self.initialCost + (self.costPerRound * self.environment.r) # money spent on mining process
 
         self.nBlocksMined = 0
         self.nFruitsMined = 0
         self.totalBitcoinReward = 0
-        self.btcRewardByRound = []
+        self.utilityLogBTC = []
         self.totalFruitchainReward = 0
-        self.ftcRewardByRound = []
+        self.utilityLogFTC = []
 
         # for fruitchains
         self.rewardFromFruits = 0
@@ -320,3 +316,21 @@ class Node:
         self.initialCost = nDevices * self.environment.costPerDevice
         consumptionPerRound = self.environment.consumptionPerDevice * nDevices * (self.environment.p / 6) # in KWh
         self.costPerRound = consumptionPerRound * self.environment.costPerKWh
+
+    def logUtilityBTC(self, roundNum):
+        """
+            Measures the value of utility
+            and calculates its expected value at roundNum for BTC
+        """
+        expUtilityVal = roundNum * (self.prMiningBlock*self.environment.coinbaseReward - self.costPerRound) - self.initialCost
+        measuredUtilityVal = self.totalBitcoinReward  - self.costPerRound*roundNum - self.initialCost
+        self.utilityLogBTC.append( (measuredUtilityVal, expUtilityVal) )
+
+    def logUtilityFTC(self, roundNum):
+        """
+            Measures the value of utility
+            and calculates its expected value at roundNum for FTC
+        """
+        expUtilityVal = roundNum * (self.prMiningBlock*self.environment.expFTCPerBlock + self.prMiningFruit*self.environment.expFTCPerFruit - self.costPerRound) - self.initialCost
+        measuredUtilityVal = self.totalFruitchainReward - self.costPerRound*roundNum - self.initialCost
+        self.utilityLogFTC.append( (measuredUtilityVal, expUtilityVal) )

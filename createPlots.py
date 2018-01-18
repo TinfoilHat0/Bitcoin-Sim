@@ -2,40 +2,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
 def plotUtility(filename):
     """
-        row format: measuredUtility, expectedUtility
+        First line is thresholds: thresholdOfNode1,.., thresholdOfNodeN
+        row format: utilityOfNode1, .., utilityofNodeN
     """
+    # 1. Extract data
     log = np.loadtxt(filename + "UtilityDataBTC", delimiter=",")
-    measuredUtilityBTC = []
-    expectedUtilityBTC = []
+    nNodes = len(log[0])
+    colors = ['-r', '-g', '-b']
+    thresholds = []
 
-    for row in log:
-        measuredUtilityBTC.append(row[0])
-        expectedUtilityBTC.append(row[1])
+    utilityValsBTC = [ [] for i in range(nNodes) ]
+    thresholds = log[0]
+    for row in log[1:]:
+        for i in range(nNodes):
+            utilityValsBTC[i].append(row[i])
 
     log = np.loadtxt(filename + "UtilityDataFTC", delimiter=",")
-    measuredUtilityFTC = []
-    expectedUtilityFTC = []
+    thresholds = []
+    utilityValsFTC = [ [] for i in range(nNodes) ]
+    thresholds = log[0]
+    plt.axhline(y=thresholds[0], color='r', linestyle='-')
+    for row in log[1:]:
+        for i in range(nNodes):
+            utilityValsFTC[i].append(row[i])
 
-    for row in log:
-        measuredUtilityFTC.append(row[0])
-        expectedUtilityFTC.append(row[1])
-
+    # 2. Plot data
     plt.figure(figsize=(10,10))
-    plt.plot(expectedUtilityBTC, '-b', label='Expected')
-    plt.plot(measuredUtilityBTC, '-r', label='Measured')
-    plt.xlabel("Snapshots")
+    plt.axhline(y=thresholds[0], color='r', linestyle='-')
+    for i in range(len(utilityValsBTC)):
+        plt.plot(utilityValsBTC[i], colors[i%3], label='Node_' + str(i) )
+    plt.xlabel("Rounds")
     plt.ylabel("Value of utility")
     plt.legend()
     plt.savefig(filename + "BTCUtility.png")
     plt.close()
 
     plt.figure(figsize=(10,10))
-    plt.plot(expectedUtilityFTC, '-b', label='Expected')
-    plt.plot(measuredUtilityFTC, '-r', label='Measured')
-    plt.xlabel("Snapshots")
+    plt.axhline(y=thresholds[0], color='r', linestyle='-')
+    for i in range(len(utilityValsFTC)):
+        plt.plot(utilityValsFTC[i], colors[i%3], label='Node_' + str(i) )
+    plt.xlabel("Rounds")
     plt.ylabel("Value of utility")
     plt.legend()
     plt.savefig(filename + "FTCUtility.png")

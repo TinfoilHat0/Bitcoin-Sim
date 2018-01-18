@@ -49,7 +49,7 @@ class Simulator:
             for node in self.nodes:
                 self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
             # Save other statistics
-            self.statsLog.append( (self.environment.avgFruitPerBlock, self.environment.avgNormalFruitReward, self.environment.avgRewardPerFruit, self.environment.avgRewardPerBlock) )
+            self.statsLog.append( (self.environment.avgFruitPerBlock, self.environment.avgNormalFruitReward, self.environment.avgFTCPerFruit, self.environment.avgFTCPerBlock) )
             self.saveUtilityData(filename)
         print('Writing results to file: ' + filename)
         # self.saveRewardsData(filename)
@@ -79,30 +79,40 @@ class Simulator:
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
         file.write("# Avg. number of fruits per block, Avg. normal fruit reward, Avg. reward per fruit, Avg. reward per block. First line is theoretical expectations." + "\n")
 
-        file.write(str(self.environment.expFruitPerBlock) + "," + str(self.environment.expNormalFruitReward) + "," + str(self.environment.expRewardPerFruit) + "," + str(self.environment.expRewardPerBlock) + "\n")
+        file.write(str(self.environment.expFruitPerBlock) + "," + str(self.environment.expNormalFruitReward) + "," + str(self.environment.expFTCPerFruit) + "," + str(self.environment.expFTCPerBlock) + "\n")
         for log in self.statsLog:
             file.write(",".join(map(str, log)) + "\n")
-
         file.close()
 
     def saveUtilityData(self, filename):
-        # currently assuming no cost
-        node = self.nodes[0] # Arbitrarily pick node 0
-
         file = open(filename + "UtilityDataBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function by round. Measured, Expecetd" + "\n")
+        file.write("# Value of utility function(BTC) by round for each node, seperated by commas. First line is thresholds." + "\n")
 
-        for log in node.btcRewardByRound:
-            file.write(",".join(map(str, log)) + "\n")
+        thresholds = []
+        for node in self.nodes:
+            thresholds.append( node.threshold )
+        file.write(",".join(map(str, thresholds)) + "\n")
+        for i in range(self.r):
+            roundLog = []
+            for node in self.nodes:
+                roundLog.append( node.utilityLogBTC[i][0] )
+            file.write(",".join(map(str, roundLog)) + "\n")
         file.close()
 
         file = open(filename + "UtilityDataFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function by round. Measured, Expecetd" + "\n")
+        file.write("# Value of utility function(FTC) by round for each node, seperated by commas. First line is thresholds." + "\n")
 
-        for log in node.ftcRewardByRound:
-            file.write(",".join(map(str, log)) + "\n")
+        thresholds = []
+        for node in self.nodes:
+            thresholds.append( node.threshold )
+        file.write(",".join(map(str, thresholds)) + "\n")
+        for i in range(self.r):
+            roundLog = []
+            for node in self.nodes:
+                roundLog.append( node.utilityLogFTC[i][0] )
+            file.write(",".join(map(str, roundLog)) + "\n")
         file.close()
