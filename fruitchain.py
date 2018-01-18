@@ -35,14 +35,25 @@ class Environment:
         self.c3 = 1/100
         self.nFruitsInWindow = 0
 
+        # Hard-coded constants taken from real world data of Bitcoin
+        self.coinbaseReward = 12.5
+        self.networkHashRate = 16 * (10**5) # Th/s
+        self.usdToBTC = 9 * (10**-5) # 1 USD = 0.00009 BTC
+        self.costPerKWh = 18 * (10**-6) # In France, cost per KWh = 0.2 USD = 0.000018 BTC
+        self.deviceHashRate = 14 # TH/s, AntMiner S9
+        self.costPerDevice = 0.23 # BTC
+        self.consumptionPerDevice = 1.372 # KWh
+
         # Stats related with simulation run
         self.avgFruitPerBlock = 0
         self.avgNormalFruitReward = 0
-        # theoretical calculations for fruitchain (see analysis paper), x=100 is expected block reward
+        # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
         self.expFruitPerBlock = self.pF / self. p
-        self.expNormalFruitReward = self.p * (1-self.c1)*100 / ( self.k*(self.pF + self.p) )
-        self.expRewardPerFruit = ( self.p * (1-self.c1) * 100 * (1-self.c2 + self.c3) ) / (self.pF + self.p)
-        self.expRewardPerBlock = ( (1-self.c1)*100*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*100
+        self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
+        self.expRewardPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
+        self.expRewardPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
+
+
 
     def initializeNodes(self, nodes, t = 0):
         '''
@@ -109,7 +120,7 @@ class Environment:
         # keep track of received and expected rewards for every 1/p rounds
         if roundNum % ceil(1/self.p) == 0:
             for node in self.nodes:
-                expectedBtcReward = roundNum * 100 * node.prMiningBlock
+                expectedBtcReward = roundNum * self.coinbaseReward * node.prMiningBlock
                 node.btcRewardByRound.append( (node.totalBitcoinReward, expectedBtcReward ) )
 
                 expectedFtcReward = roundNum * ( node.prMiningBlock * self.expRewardPerBlock + node.prMiningFruit * self.expRewardPerFruit )
@@ -192,27 +203,23 @@ class Node:
         self.fruitsInChain = {}
         self.hashFrac =  hashFrac
 
-        # simulator related parameters
         self.environment = env
         self.k = self.environment.k
-        # total blocks mined by the node
+        self.calculateCost()
+
         self.nBlocksMined = 0
-        # total fruits mined by the node
         self.nFruitsMined = 0
-        # total reward received by the node acc. Bitcoin scheme
         self.totalBitcoinReward = 0
         self.btcRewardByRound = []
-        # total reward received by the node acc. Fruitchain scheme and other related params
         self.totalFruitchainReward = 0
         self.ftcRewardByRound = []
-        # for testing fruitchain
+
+        # for fruitchains
         self.rewardFromFruits = 0
         self.rewardFromBlocks = 0
-        # pr. of mining a block in a round
-        self.prMiningBlock =  self.environment.p * self.hashFrac
-        # pr. of mining a fruit in a round
-        self.prMiningFruit = self.environment.pF * self.hashFrac
 
+        self.prMiningBlock =  self.environment.p * self.hashFrac
+        self.prMiningFruit = self.environment.pF * self.hashFrac
 
 
     def mineFruit(self, roundNum):
@@ -306,3 +313,10 @@ class Node:
                 del txList[i]
             else:
                 return
+
+    def calculateCost(self):
+        hashRate = self.hashFrac * self.environment.networkHashRate
+        nDevices = ceil (hashRate / self.environment.deviceHashRate)
+        self.initialCost = nDevices * self.environment.costPerDevice
+        consumptionPerRound = self.environment.consumptionPerDevice * nDevices * (self.environment.p / 6) # in KWh
+        self.costPerRound = consumptionPerRound * self.environment.costPerKWh

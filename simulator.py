@@ -54,7 +54,6 @@ class Simulator:
         print('Writing results to file: ' + filename)
         # self.saveRewardsData(filename)
         # self.saveStatsData(filename)
-
         print("Finished!")
 
     def saveRewardData(self, filename):

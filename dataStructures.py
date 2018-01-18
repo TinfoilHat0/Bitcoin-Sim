@@ -47,7 +47,7 @@ class Block:
         self.mineRound = mineRound
         self.fruits = fruits
         self.txs = txs
-        self.totalFee = 100 #sum of fees in txs set
+        self.totalFee = 12.5 #sum of fees in txs set
         self.height = -1 # height in blockchain
 
         self.nFruits = len(fruits)

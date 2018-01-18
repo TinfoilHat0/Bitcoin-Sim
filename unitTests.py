@@ -75,7 +75,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(set(), freshFruits)
 
 
-
     def test_blockMining(self):
         '''
         Mine a block in round 3, see if it's added
@@ -91,6 +90,25 @@ class TestNode(unittest.TestCase):
         self.assertEqual(f.hangBlockHeight, 1)
         self.assertEqual(f.contBlockHeight, 2)
         self.assertEqual(f.includeRound, 3)
+
+    def test_calculateCostPerRound(self):
+        node = Node(1)
+        env = Environment()
+        # Hard-coded constants taken from real world data of Bitcoin
+        env.coinbaseReward = 12.5
+        env.networkHashRate = 16 * (10**5) # Th/s
+        env.usdToBTC = 9 * (10**-5) # 1 USD = 0.00009 BTC
+        env.costPerKWh = 18 * (10**-6) # In France, cost per KWh = 0.2 USD = 0.000018 BTC
+        env.deviceHashRate = 14 # TH/s, AntMiner S9
+        env.costPerDevice = 0.23 # BTC
+        env.consumptionPerDevice = 1.372 # KWh
+
+        node.environment = env
+        node.calculateCost()
+
+        self.assertEqual(node.initialCost, 26285.780000000002)
+        self.assertEqual(node.costPerRound, 0.47040117600000003)
+
 
 
 class TestEnvironment(unittest.TestCase):
