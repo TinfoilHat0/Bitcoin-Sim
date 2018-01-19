@@ -47,7 +47,7 @@ class Simulator:
             print("Simulation " + str(i) + " has finished!")
             # Save reward related statistics
             for node in self.nodes:
-                self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBitcoinReward, node.totalFruitchainReward) )
+                self.rewardLog[node.id].append( (node.nBlocksMined, node.nFruitsMined, node.totalBTCReward, node.totalFTCReward) )
             # Save other statistics
             self.statsLog.append( (self.environment.avgFruitPerBlock, self.environment.avgNormalFruitReward, self.environment.avgFTCPerFruit, self.environment.avgFTCPerBlock) )
             self.saveUtilityData(filename)
@@ -59,7 +59,7 @@ class Simulator:
     def saveRewardData(self, filename):
         file = open(filename + "RewardData", 'w')
         file.write("# n:" + str(self.n) + " t:" + str(self.t) + " r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("# id," + "HashFrac," +  "nBlocksMined,"  + "nFruitsMined,"  +  "totalBitcoinReward," + "totalFruitchainReward" + "\n")
+        file.write("# id," + "HashFrac," +  "nBlocksMined,"  + "nFruitsMined,"  +  "totalBTCReward," + "totalFTCReward" + "\n")
 
         for node in self.environment.nodes:
             avgStats = [0, 0, 0, 0]

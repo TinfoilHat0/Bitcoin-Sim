@@ -23,14 +23,14 @@ def plotUtility(filename):
     thresholds = []
     utilityValsFTC = [ [] for i in range(nNodes) ]
     thresholds = log[0]
-    plt.axhline(y=thresholds[0], color='r', linestyle='-')
     for row in log[1:]:
         for i in range(nNodes):
             utilityValsFTC[i].append(row[i])
 
     # 2. Plot data
     plt.figure(figsize=(10,10))
-    plt.axhline(y=thresholds[0], color='r', linestyle='-')
+    for i in range(len(thresholds)):
+        plt.axhline(y=thresholds[i], color='k', linestyle='-')
     for i in range(len(utilityValsBTC)):
         plt.plot(utilityValsBTC[i], colors[i%3], label='Node_' + str(i) )
     plt.xlabel("Rounds")
@@ -40,7 +40,8 @@ def plotUtility(filename):
     plt.close()
 
     plt.figure(figsize=(10,10))
-    plt.axhline(y=thresholds[0], color='r', linestyle='-')
+    for i in range(len(thresholds)):
+        plt.axhline(y=thresholds[i], color='k', linestyle='-')
     for i in range(len(utilityValsFTC)):
         plt.plot(utilityValsFTC[i], colors[i%3], label='Node_' + str(i) )
     plt.xlabel("Rounds")
@@ -153,11 +154,11 @@ def plotMinerRewards(filename):
     totalFruitsMined = sum(fruitsMined)
     fruitsMined = [i/totalFruitsMined for i in fruitsMined]
 
-    totalBitcoinReward = sum(bitcoinRewards)
-    bitcoinRewards = [i/totalBitcoinReward for i in bitcoinRewards]
+    totalBTCReward = sum(bitcoinRewards)
+    bitcoinRewards = [i/totalBTCReward for i in bitcoinRewards]
 
-    totalFruitchainReward = sum(fruitchainRewards)
-    fruitchainRewards = [i/totalFruitchainReward for i in fruitchainRewards]
+    totalFTCReward = sum(fruitchainRewards)
+    fruitchainRewards = [i/totalFTCReward for i in fruitchainRewards]
 
     N = len(hashFracs)
     ind = np.arange(N)
