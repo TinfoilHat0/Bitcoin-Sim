@@ -121,11 +121,7 @@ class TestEnvironment(unittest.TestCase):
         env = Environment(0.2, 0.5)
         nodes = [Node(1, 0.3), Node(2, 0.2), Node(3, 0.5)]
         # Corrupt a node
-        env.initializeNodes(nodes, 1)
-        self.assertEqual(env.nodes, nodes)
-        self.assertEqual(env.corruptNodes, [nodes[i] for i in range(2, 3)])
-        self.assertEqual(env.honestNodes, [nodes[i] for i in range(0, 2)])
-
+        env.initializeNodes(nodes)
         # check if hash fractions are correct
         self.assertEqual(env.blockLeaderProbs, [0.06, 0.04000000000000001, 0.1, 0.8]) # 0.2 + 0.2 = 0.400...1 due to floating point arithmatics
         self.assertEqual(env.fruitLeaderProbs, [0.15, 0.1, 0.25, 0.5])
@@ -147,31 +143,6 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(b.minerID, 1)
         self.assertEqual(b.mineRound, 1)
         self.assertEqual(node.blockChain.length, 2)
-
-
-    def test_defaultTxSelection(self):
-        '''
-        Generate 105 txs in a round,
-        have a node process them
-        '''
-
-        env = Environment()
-        node = Node(1)
-        env.initializeNodes([node])
-
-        # Generate 105 txs in a round 1
-        env.txRate = 105
-        env.generateTxs(1)
-        self.assertEqual(len(env.unprocessedTxs), 105)
-        # Node mines a block in rnd2 which should contain b.size txs
-        b = Block(1)
-        b.size = 10**3
-        node.defaultTxSelection(1, b)
-        self.assertEqual(len(b.txs) , min(b.size, 105))
-
-        self.assertEqual(len(env.processedTxs), 105)
-        self.assertEqual(len(env.unprocessedTxs), 0)
-
 
     def test_rewardFruitchain(self):
         '''

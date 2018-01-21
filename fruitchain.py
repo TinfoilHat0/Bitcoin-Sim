@@ -7,7 +7,7 @@ import numpy as np
 import bisect
 
 class Environment:
-    def __init__(self, p = 1, pF = 1, txRate = 5, k = 16, r = -1):
+    def __init__(self, p = 1, pF = 1, k = 16):
         '''
         p: pr. of mining a block in a rounds
         pF: pr. of mining a fruit in a round
@@ -18,16 +18,8 @@ class Environment:
         '''
         self.p = p
         self.pF = pF
-        self.txRate = txRate
         self.k = k
-        self.r = r
         self.nodes = []
-        self.honestNodes = []
-        self.corruptNodes = []
-
-        # Keep track of txs
-        self.unprocessedTxs = []
-        self.processedTxs = []
 
         # Fruitchain related params.
         self.c1 = 1/100
@@ -53,10 +45,10 @@ class Environment:
         self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
         self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
 
-        self.nPassedThresholdByExpectedBTC = 0
-        self.nPassedThresholdByExpectedFTC = 0
+        # Stability test related params
+        self.nPassedThreshold = 0
 
-    def initializeNodes(self, nodes, t = 0):
+    def initializeNodes(self, nodes):
         '''
         nodes: list of nodes which are in the environment
         t: number of corrupt nodes
@@ -66,26 +58,14 @@ class Environment:
         '''
         self.nodes = nodes
         self.n = len(nodes)
-        self.t = t
         self.blockLeaderProbs = []
         self.fruitLeaderProbs = []
         for i in range(self.n):
             self.blockLeaderProbs.append(self.p*nodes[i].hashFrac)
             self.fruitLeaderProbs.append(self.pF*nodes[i].hashFrac)
             nodes[i].environment = self
-            if i < self.n-self.t:
-                self.honestNodes.append(nodes[i])
-            else:
-                self.corruptNodes.append(nodes[i])
         self.blockLeaderProbs.append(1-self.p) # prob. of nobody mines a block in a round
         self.fruitLeaderProbs.append(1-self.pF) # prob. of nobody mines a fruit in a round
-
-    def generateTxs(self, roundNum):
-        for i in range(self.txRate):
-            fee = random.randint(1, 10)
-            tx = Transaction(roundNum, fee, 1)
-            # bisect.insort(self.unprocessedTxs, tx) check this to keep unprocessed txs sorted
-            self.unprocessedTxs.append(tx)
 
     def step(self, roundNum):
         '''
@@ -112,44 +92,36 @@ class Environment:
             # Trigger reward schemes
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
+            # log utility whenever a block is mined
+            self.logUtility(roundNum)
             # Bcast the block
             for node in self.nodes:
                 if node.id != blockLeaderID:
                     node.deliver(b)
 
-        # 2. log the value of utility in every 1/p rounds
+        return b, f
+
+    def logUtility(self, roundNum):
+        """
+        Log utility values
+        """
         for node in self.nodes:
             node.logUtilityBTC(roundNum)
             node.logUtilityFTC(roundNum)
+            measuredUtilityBTC = node.utilityLogBTC[-1][0]
+            measuredUtilityFTC = node.utilityLogFTC[-1][0]
 
-            utilityValBTC = node.utilityLogBTC[-1]
-            utilityValFTC = node.utilityLogFTC[-1]
+            if node.nRoundsToThresholdBTC == 0 and measuredUtilityBTC >= node.threshold:
+                node.nRoundsToThresholdBTC = roundNum
+                node.dFromExpectedThresholdBTC = ( abs(roundNum - node.expRoundsToPassThresholdBTC) / node.expRoundsToPassThresholdBTC ) * 100
 
+            if node.nRoundsToThresholdFTC == 0 and measuredUtilityFTC >= node.threshold:
+                node.nRoundsToThresholdFTC = roundNum
+                node.dFromExpectedThresholdFTC = ( abs(roundNum - node.expRoundsToPassThresholdFTC) / node.expRoundsToPassThresholdFTC ) * 100
 
-        # 3. update some statistics at the end of last round
-        if roundNum == self.r:
-            # Stats for fruitchain analysis
-            node = self.nodes[0]
-            self.avgFruitPerBlock  /= (node.blockChain.length-1)
-            self.avgNormalFruitReward /= (node.blockChain.length -1 -self.k)
-            if node.nFruitsMined != 0:
-                self.avgFTCPerFruit = node.rewardFromFruits / node.nFruitsMined
-            else:
-                self.avgFTCPerFruit = 0
-            if node.nBlocksMined != 0:
-                self.avgFTCPerBlock = node.rewardFromBlocks / node.nBlocksMined
-            else:
-                self.avgFTCPerBlock = 0
-            # Total reward distributed in the system
-            totalBTCReward, totalFTCReward = 0, 0
-            for node in self.nodes:
-                totalBTCReward += node.totalBTCReward
-                totalFTCReward += node.totalFTCReward
-            for node in self.nodes:
-                node.thresholdBTC = totalBTCReward * node.hashFrac
-                node.thresholdFTC = totalFTCReward * node.hashFrac
-
-        return b, f
+            if node.passedThreshold == False and (node.nRoundsToThresholdFTC > 0 and node.nRoundsToThresholdBTC > 0):
+                node.passedThreshold = True
+                self.nPassedThreshold += 1
 
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
@@ -162,7 +134,6 @@ class Environment:
         if self.nodes[blockLeaderID].blockChain.length > self.k+1: # in FTC, rewards of first k blocks are discarded
             totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
             self.nodes[blockLeaderID].totalBTCReward += totalFee
-
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """
@@ -177,7 +148,6 @@ class Environment:
             # 1. Fetch the totalFee from head and award its miner
             x = head.totalFee
             self.nodes[blockLeaderID].totalFTCReward += (self.c1)*x
-            self.nodes[blockLeaderID].rewardFromBlocks += (self.c1)*x
             R = (1-self.c1)*x
             # 2. Calculate 'normal' reward
             n0 = R / self.nFruitsInWindow
@@ -188,13 +158,8 @@ class Environment:
                     l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
                     dL = self.c3 * (1 - l/(self.k-1))
                     self.nodes[f.minerID].totalFTCReward += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].rewardFromFruits += n0*(1 - self.c2 + dL)
-
                     self.nodes[b.minerID].totalFTCReward += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].rewardFromBlocks += n0*(self.c2 - dL)
-
                 self.nodes[b.minerID].totalFTCReward += n0 # reward of the implicit fruit goes to block miner
-                self.nodes[b.minerID].rewardFromBlocks += n0
             # 4. Slide the window and adjust the number of fruits
             self.nFruitsInWindow -= (blockChain[-self.k-1].nFruits + 1)
             self.nFruitsInWindow += (head.nFruits + 1)
@@ -230,9 +195,6 @@ class Node:
         self.totalFTCReward = 0
         self.utilityLogFTC = [] # (measured, expected by rounds)
 
-        self.rewardFromFruits = 0
-        self.rewardFromBlocks = 0
-
         self.prMiningBlock =  self.environment.p * self.hashFrac
         self.prMiningFruit = self.environment.pF * self.hashFrac
         self.expGainPerRoundBTC = ( self.prMiningBlock*self.environment.coinbaseReward ) - self.costPerRound
@@ -240,9 +202,12 @@ class Node:
 
         self.expRoundsToPassThresholdBTC = ceil( self.threshold  / self.expGainPerRoundBTC )
         self.expRoundsToPassThresholdFTC = ceil( self.threshold / self.expGainPerRoundFTC )
-        self.nRoundsToPassThresholdBTC = 0
-        self.nRoundsToPassThresholdFTC = 0
+        self.nRoundsToThresholdBTC = 0
+        self.nRoundsToThresholdFTC = 0
+        self.passedThreshold = False
 
+        self.dFromExpectedThresholdBTC = 0
+        self.dFromExpectedThresholdFTC = 0
 
     def mineFruit(self, roundNum):
         '''
@@ -302,39 +267,6 @@ class Node:
                     fresh.add(f)
         return fresh
 
-    def selectAllTxs(self, roundNum, block):
-        '''
-        Put all unprocessed txs to block, ignoring space limitations i.e., blocks
-        have unlimited size
-        '''
-        for tx in self.environment.unprocessedTxs:
-            tx.includeRound = roundNum
-            block.totalFee += tx.fee
-            block.txs.append(tx)
-            self.environment.processedTxs.append(tx)
-        self.environment.unprocessedTxs = []
-
-    def defaultTxSelection(self, roundNum, block):
-        '''
-        Simply fetch txs from the unprocessed tx list of environment
-        until you can't fill anymore
-        Assumes unprocessed txs are sorted
-        '''
-        spaceLeft = block.size
-        txList = self.environment.unprocessedTxs
-        for i in range(len(txList)-1, -1, -1):
-            tx = txList[i]
-            if spaceLeft >= tx.size:
-                # update tx include round and total fee of node
-                tx.includeRound = roundNum
-                block.totalFee += tx.fee
-                block.txs.append(tx)
-                spaceLeft -= tx.size
-                # add tx to block/processed and remove tx from unprocessed
-                self.environment.processedTxs.append(tx)
-                del txList[i]
-            else:
-                return
 
     def calculateCost(self):
         hashRate = self.hashFrac * self.environment.networkHashRate
