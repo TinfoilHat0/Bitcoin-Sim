@@ -53,7 +53,8 @@ class Environment:
         self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
         self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
 
-
+        self.nPassedThresholdByExpectedBTC = 0
+        self.nPassedThresholdByExpectedFTC = 0
 
     def initializeNodes(self, nodes, t = 0):
         '''
@@ -93,7 +94,7 @@ class Environment:
         Nodes attempt to mine a fruit and a block independently,
         they broadcast what they have mined
         '''
-        # pick an ID for the miner of the block in this round. If ID is n, nobody mines
+        # 1. Simulate mining process and broadcast what's been mined
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
         b, f = None, None
@@ -116,12 +117,16 @@ class Environment:
                 if node.id != blockLeaderID:
                     node.deliver(b)
 
-        # log the value of utility in every 1/p rounds
+        # 2. log the value of utility in every 1/p rounds
         for node in self.nodes:
             node.logUtilityBTC(roundNum)
             node.logUtilityFTC(roundNum)
 
-        # update some statistics at the end of last round
+            utilityValBTC = node.utilityLogBTC[-1]
+            utilityValFTC = node.utilityLogFTC[-1]
+
+
+        # 3. update some statistics at the end of last round
         if roundNum == self.r:
             # Stats for fruitchain analysis
             node = self.nodes[0]
@@ -154,8 +159,9 @@ class Environment:
         Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
         miner gets everything
         """
-        totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
-        self.nodes[blockLeaderID].totalBTCReward += totalFee
+        if self.nodes[blockLeaderID].blockChain.length > self.k+1: # in FTC, rewards of first k blocks are discarded
+            totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
+            self.nodes[blockLeaderID].totalBTCReward += totalFee
 
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
@@ -215,28 +221,27 @@ class Node:
         self.environment = env
         self.k = self.environment.k
         self.calculateCost()
-        self.threshold = (self.costPerRound * self.environment.r) + self.initialCost
-        self.thresholdBTC = 0
-        self.thresholdFTC = 0
+        self.threshold = self.initialCost
 
         self.nBlocksMined = 0
         self.nFruitsMined = 0
         self.totalBTCReward = 0
-        self.utilityLogBTC = []
+        self.utilityLogBTC = [] # (measured, expected by rounds)
         self.totalFTCReward = 0
-        self.utilityLogFTC = []
-
+        self.utilityLogFTC = [] # (measured, expected by rounds)
 
         self.rewardFromFruits = 0
         self.rewardFromBlocks = 0
 
         self.prMiningBlock =  self.environment.p * self.hashFrac
         self.prMiningFruit = self.environment.pF * self.hashFrac
-        self.expGainPerRoundBTC = self.prMiningBlock*self.environment.coinbaseReward - self.costPerRound
-        self.expGainPerRoundFTC = self.prMiningBlock*self.environment.expFTCPerBlock + self.prMiningFruit*self.environment.expFTCPerFruit - self.costPerRound
+        self.expGainPerRoundBTC = ( self.prMiningBlock*self.environment.coinbaseReward ) - self.costPerRound
+        self.expGainPerRoundFTC = ( self.prMiningBlock*self.environment.expFTCPerBlock + self.prMiningFruit*self.environment.expFTCPerFruit ) - self.costPerRound
 
-        self.expRoundsToPassThresholdBTC = ceil( (self.threshold  + self.initialCost) / self.expGainPerRoundBTC )
-        self.expRoundsToPassThresholdFTC = ceil( (self.threshold + self.initialCost) / self.expGainPerRoundFTC )
+        self.expRoundsToPassThresholdBTC = ceil( self.threshold  / self.expGainPerRoundBTC )
+        self.expRoundsToPassThresholdFTC = ceil( self.threshold / self.expGainPerRoundFTC )
+        self.nRoundsToPassThresholdBTC = 0
+        self.nRoundsToPassThresholdFTC = 0
 
 
     def mineFruit(self, roundNum):
@@ -343,8 +348,8 @@ class Node:
             Measures the value of utility
             and calculates its expected value at roundNum for BTC
         """
-        expUtilityVal = roundNum * (self.expGainPerRoundBTC) - self.initialCost
-        measuredUtilityVal = self.totalBTCReward  - self.costPerRound*roundNum - self.initialCost
+        expUtilityVal = roundNum * (self.expGainPerRoundBTC)
+        measuredUtilityVal = self.totalBTCReward  - self.costPerRound*roundNum
         self.utilityLogBTC.append( (measuredUtilityVal, expUtilityVal) )
 
     def logUtilityFTC(self, roundNum):
@@ -352,6 +357,6 @@ class Node:
             Measures the value of utility
             and calculates its expected value at roundNum for FTC
         """
-        expUtilityVal = roundNum * (self.expGainPerRoundFTC) - self.initialCost
-        measuredUtilityVal = self.totalFTCReward - self.costPerRound*roundNum - self.initialCost
+        expUtilityVal = roundNum * (self.expGainPerRoundFTC)
+        measuredUtilityVal = self.totalFTCReward - self.costPerRound*roundNum
         self.utilityLogFTC.append( (measuredUtilityVal, expUtilityVal) )

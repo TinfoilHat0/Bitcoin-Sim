@@ -11,28 +11,32 @@ def plotUtility(filename):
     log = np.loadtxt(filename + "UtilityDataBTC", delimiter=",")
     nNodes = len(log[0])
     colors = ['-r', '-g', '-b']
-    thresholds = []
 
     utilityValsBTC = [ [] for i in range(nNodes) ]
-    thresholds = log[0]
-    for row in log[1:]:
+    thresholdsBTC, expRoundsBTC = log[0], log[1]
+    for row in log[2:]:
         for i in range(nNodes):
             utilityValsBTC[i].append(row[i])
 
     log = np.loadtxt(filename + "UtilityDataFTC", delimiter=",")
-    thresholds = []
+    thresholdsFTC, expRoundsFTC = log[0], log[1]
     utilityValsFTC = [ [] for i in range(nNodes) ]
-    thresholds = log[0]
-    for row in log[1:]:
+    for row in log[2:]:
         for i in range(nNodes):
             utilityValsFTC[i].append(row[i])
 
     # 2. Plot data
     plt.figure(figsize=(10,10))
-    for i in range(len(thresholds)):
-        plt.axhline(y=thresholds[i], color='k', linestyle='-')
+    # -- plotting vertical expected rounds line
+    for i in range(len(expRoundsBTC)):
+        plt.axvline(x=expRoundsBTC[i], color='k', linestyle='-')
+    # -- plotting horizontal threshold line
+    for i in range(len(thresholdsBTC)):
+        plt.axhline(y=thresholdsBTC[i], color='k', linestyle='-')
+    # -- plotting utility value vs. rounds
     for i in range(len(utilityValsBTC)):
         plt.plot(utilityValsBTC[i], colors[i%3], label='Node_' + str(i) )
+    # -- legend of plot
     plt.xlabel("Rounds")
     plt.ylabel("Value of utility")
     plt.legend()
@@ -40,10 +44,16 @@ def plotUtility(filename):
     plt.close()
 
     plt.figure(figsize=(10,10))
-    for i in range(len(thresholds)):
-        plt.axhline(y=thresholds[i], color='k', linestyle='-')
+    # -- plotting vertical expected rounds line
+    for i in range(len(expRoundsFTC)):
+        plt.axvline(x=expRoundsFTC[i], color='k', linestyle='-')
+    # -- plotting horizontal threshold line
+    for i in range(len(thresholdsFTC)):
+        plt.axhline(y=thresholdsFTC[i], color='k', linestyle='-')
+    # -- plotting utility value vs. rounds
     for i in range(len(utilityValsFTC)):
         plt.plot(utilityValsFTC[i], colors[i%3], label='Node_' + str(i) )
+    # -- legend of plot
     plt.xlabel("Rounds")
     plt.ylabel("Value of utility")
     plt.legend()

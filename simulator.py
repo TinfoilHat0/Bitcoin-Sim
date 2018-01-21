@@ -85,15 +85,19 @@ class Simulator:
         file.close()
 
     def saveUtilityData(self, filename):
+        # 1. BTC data
         file = open(filename + "UtilityDataBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function(BTC) by round for each node, seperated by commas. First line is thresholds." + "\n")
+        file.write("# Value of utility function(BTC) by round for each node, seperated by commas. First line is thresholds. Second line is expected rounds to pass them." + "\n")
 
-        thresholds = []
+        thresholds, expRounds = [], []
         for node in self.nodes:
             thresholds.append( node.threshold )
+            expRounds.append( node.expRoundsToPassThresholdBTC )
         file.write(",".join(map(str, thresholds)) + "\n")
+        file.write(",".join(map(str, expRounds)) + "\n")
+        
         for i in range(self.r):
             roundLog = []
             for node in self.nodes:
@@ -101,15 +105,19 @@ class Simulator:
             file.write(",".join(map(str, roundLog)) + "\n")
         file.close()
 
+        # 2. FTC data
         file = open(filename + "UtilityDataFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function(FTC) by round for each node, seperated by commas. First line is thresholds." + "\n")
+        file.write("# Value of utility function(FTC) by round for each node, seperated by commas. First line is thresholds. Second line is expected rounds to pass them." + "\n")
 
-        thresholds = []
+        thresholds, expRounds = [], []
         for node in self.nodes:
             thresholds.append( node.threshold )
+            expRounds.append( node.expRoundsToPassThresholdFTC )
         file.write(",".join(map(str, thresholds)) + "\n")
+        file.write(",".join(map(str, expRounds)) + "\n")
+
         for i in range(self.r):
             roundLog = []
             for node in self.nodes:
