@@ -27,6 +27,7 @@ def plotStability(filename):
     plt.close()
 
 
+
 def plotUtility(filename):
     """
         First line is thresholds: thresholdOfNode1,.., thresholdOfNodeN

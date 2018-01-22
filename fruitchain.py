@@ -36,9 +36,6 @@ class Environment:
         self.costPerDevice = 0.23 # BTC
         self.consumptionPerDevice = 1.372 # KWh
 
-        # Stats related with simulation run
-        self.avgFruitPerBlock = 0
-        self.avgNormalFruitReward = 0
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
         self.expFruitPerBlock = self.pF / self. p
         self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
@@ -51,10 +48,7 @@ class Environment:
     def initializeNodes(self, nodes):
         '''
         nodes: list of nodes which are in the environment
-        t: number of corrupt nodes
-
-        Initialize nodes by putting t of them to corrupt nodes' list
-        and (n-t) of them to honest node's list
+        set probability of mining for each node
         '''
         self.nodes = nodes
         self.n = len(nodes)
@@ -88,7 +82,6 @@ class Environment:
 
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
-            self.avgFruitPerBlock += b.nFruits
             # Trigger reward schemes
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
@@ -98,7 +91,6 @@ class Environment:
             for node in self.nodes:
                 if node.id != blockLeaderID:
                     node.deliver(b)
-
         return b, f
 
     def logUtility(self, roundNum):
@@ -151,7 +143,6 @@ class Environment:
             R = (1-self.c1)*x
             # 2. Calculate 'normal' reward
             n0 = R / self.nFruitsInWindow
-            self.avgNormalFruitReward += n0
             # 3. Iterate over last k blocks and distribute rewards to miners
             for b in blockChain[-self.k-1:-1]:
                 for f in b.fruits:
@@ -218,7 +209,6 @@ class Node:
         hangBlockHeight = self.blockChain.length
         fruit = Fruit(self.id, roundNum, hangBlockHeight)
         self.validFruits[fruit.hangBlockHeight].add(fruit)
-
         self.nFruitsMined += 1
         return fruit
 
@@ -236,7 +226,6 @@ class Node:
             f.includeRound = roundNum
             f.contBlockHeight = self.blockChain.length
             self.fruitsInChain[hash(f)] = hash(block)
-
         self.nBlocksMined += 1
         return block
 
@@ -266,7 +255,6 @@ class Node:
                 if hash(f) not in self.fruitsInChain:
                     fresh.add(f)
         return fresh
-
 
     def calculateCost(self):
         hashRate = self.hashFrac * self.environment.networkHashRate
