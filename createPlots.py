@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 
 
 
+def plotFairness(filename):
+    return
+
 def plotStability(filename):
     """
     row format: distance from expected round to pass threshold in terms of % for node_1, .., node_n for sim i
@@ -25,7 +28,6 @@ def plotStability(filename):
     plt.legend()
     plt.savefig(filename + "stdDev.png")
     plt.close()
-
 
 
 def plotUtility(filename):

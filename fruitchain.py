@@ -7,7 +7,7 @@ import numpy as np
 import bisect
 
 class Environment:
-    def __init__(self, p = 1, pF = 1, k = 16):
+    def __init__(self, p = 1, pF = 1, k = 16, r=100):
         '''
         p: pr. of mining a block in a rounds
         pF: pr. of mining a fruit in a round
@@ -19,6 +19,7 @@ class Environment:
         self.p = p
         self.pF = pF
         self.k = k
+        self.r = r
         self.nodes = []
 
         # Fruitchain related params.
@@ -42,8 +43,10 @@ class Environment:
         self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
         self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
 
-        # Stability test related params
+        # Stability-Fairness tests related params
         self.nPassedThreshold = 0
+        self.totalRewardBTC = 0
+        self.totalRewardFTC = 0
 
     def initializeNodes(self, nodes):
         '''
@@ -86,12 +89,27 @@ class Environment:
             self.rewardBitcoin(blockLeaderID, roundNum)
             self.rewardFruitchain(blockLeaderID, roundNum)
             # log utility whenever a block is mined
-            self.logUtility(roundNum)
             # Bcast the block
             for node in self.nodes:
                 if node.id != blockLeaderID:
                     node.deliver(b)
+
+        # 2. Log utility values
+        self.logUtility(roundNum)
+        #3. Save statistics
+        if roundNum == self.r:
+            self.saveStatistics()
+
         return b, f
+
+    def saveStatistics(self):
+        """
+        Save some statistics at the end of simulation
+        """
+        for node in self.nodes:
+            self.totalRewardBTC += node.totalRewardBTC
+            self.totalRewardFTC += node.totalRewardFTC
+        return
 
     def logUtility(self, roundNum):
         """
@@ -114,6 +132,7 @@ class Environment:
             if node.passedThreshold == False and (node.nRoundsToThresholdFTC > 0 and node.nRoundsToThresholdBTC > 0):
                 node.passedThreshold = True
                 self.nPassedThreshold += 1
+        return
 
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
@@ -182,8 +201,8 @@ class Node:
         self.nBlocksMined = 0
         self.nFruitsMined = 0
         self.totalBTCReward = 0
-        self.utilityLogBTC = [] # (measured, expected by rounds)
         self.totalFTCReward = 0
+        self.utilityLogBTC = [] # (measured, expected by rounds)
         self.utilityLogFTC = [] # (measured, expected by rounds)
 
         self.prMiningBlock =  self.environment.p * self.hashFrac
