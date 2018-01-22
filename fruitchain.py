@@ -99,7 +99,6 @@ class Environment:
         #3. Save statistics
         if roundNum == self.r:
             self.saveStatistics()
-
         return b, f
 
     def saveStatistics(self):
@@ -134,7 +133,6 @@ class Environment:
                 self.nPassedThreshold += 1
         return
 
-
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
         """
         blockLeaderID: index of the leader node
@@ -144,7 +142,7 @@ class Environment:
         """
         if self.nodes[blockLeaderID].blockChain.length > self.k+1: # in FTC, rewards of first k blocks are discarded
             totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
-            self.nodes[blockLeaderID].totalBTCReward += totalFee
+            self.nodes[blockLeaderID].totalRewardBTC += totalFee
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """
@@ -158,7 +156,7 @@ class Environment:
         if head.height > self.k + 1: # +1 is due to genesis
             # 1. Fetch the totalFee from head and award its miner
             x = head.totalFee
-            self.nodes[blockLeaderID].totalFTCReward += (self.c1)*x
+            self.nodes[blockLeaderID].totalRewardFTC += (self.c1)*x
             R = (1-self.c1)*x
             # 2. Calculate 'normal' reward
             n0 = R / self.nFruitsInWindow
@@ -167,9 +165,9 @@ class Environment:
                 for f in b.fruits:
                     l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
                     dL = self.c3 * (1 - l/(self.k-1))
-                    self.nodes[f.minerID].totalFTCReward += n0*(1 - self.c2 + dL)
-                    self.nodes[b.minerID].totalFTCReward += n0*(self.c2 - dL)
-                self.nodes[b.minerID].totalFTCReward += n0 # reward of the implicit fruit goes to block miner
+                    self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
+                    self.nodes[b.minerID].totalRewardFTC += n0*(self.c2 - dL)
+                self.nodes[b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
             # 4. Slide the window and adjust the number of fruits
             self.nFruitsInWindow -= (blockChain[-self.k-1].nFruits + 1)
             self.nFruitsInWindow += (head.nFruits + 1)
@@ -200,8 +198,8 @@ class Node:
 
         self.nBlocksMined = 0
         self.nFruitsMined = 0
-        self.totalBTCReward = 0
-        self.totalFTCReward = 0
+        self.totalRewardBTC = 0
+        self.totalRewardFTC = 0
         self.utilityLogBTC = [] # (measured, expected by rounds)
         self.utilityLogFTC = [] # (measured, expected by rounds)
 
@@ -288,7 +286,7 @@ class Node:
             and calculates its expected value at roundNum for BTC
         """
         expUtilityVal = roundNum * (self.expGainPerRoundBTC)
-        measuredUtilityVal = self.totalBTCReward  - self.costPerRound*roundNum
+        measuredUtilityVal = self.totalRewardBTC  - self.costPerRound*roundNum
         self.utilityLogBTC.append( (measuredUtilityVal, expUtilityVal) )
 
     def logUtilityFTC(self, roundNum):
@@ -297,5 +295,5 @@ class Node:
             and calculates its expected value at roundNum for FTC
         """
         expUtilityVal = roundNum * (self.expGainPerRoundFTC)
-        measuredUtilityVal = self.totalFTCReward - self.costPerRound*roundNum
+        measuredUtilityVal = self.totalRewardFTC - self.costPerRound*roundNum
         self.utilityLogFTC.append( (measuredUtilityVal, expUtilityVal) )

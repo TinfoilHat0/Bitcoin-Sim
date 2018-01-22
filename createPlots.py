@@ -1,89 +1,58 @@
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 
 
-
-def plotFairness(filename):
-    return
-
-def plotStability(filename):
+def plotFairnessMetric(filename):
     """
-    row format: distance from expected round to pass threshold in terms of % for node_1, .., node_n for sim i
+    row format: ratio of distance from expected share of reward for  node_1, .. , node_n
+
+    calculate the fairness metric, i.e, std.dev of rows
     """
-    logBTC = np.loadtxt(filename + "StabilityDataBTC", delimiter=",")
+    # 1. fairness metric for btc
+    logBTC = np.loadtxt(filename + "FairnessDataBTC", delimiter=",")
     stdDevsBTC = []
-    for log in logBTC:
-        stdDevsBTC.append( np.var(log) ** (1/2) )
-
-    logFTC = np.loadtxt(filename + "StabilityDataFTC", delimiter=",")
+    for distances in logBTC:
+        stdDevsBTC.append( np.var(distances) ** (1/2) )
+    # 2. fairness metric for ftc
+    logFTC = np.loadtxt(filename + "FairnessDataFTC", delimiter=",")
     stdDevsFTC = []
-    for log in logFTC:
-        stdDevsFTC.append( np.var(log) ** (1/2) )
-
-    plt.figure(figsize=(10,10))
-    plt.plot(stdDevsBTC, '-y', label='BTC')
-    plt.plot(stdDevsFTC, '-g', label='FTC')
+    for distances in logFTC:
+        stdDevsFTC.append( np.var(distances) ** (1/2) )
+    # 3. plot both in a plot
+    plt.figure(figsize=(5,5))
+    plt.plot(stdDevsBTC, '-y', label='Bitcoin')
+    plt.plot(stdDevsFTC, '-g', label='Fruitchain')
     plt.xlabel("Simulations")
-    plt.ylabel("Standard Deviation")
+    plt.ylabel("Fairness Metric")
     plt.legend()
-    plt.savefig(filename + "stdDev.png")
+    plt.savefig(filename + "fairnessMetric.png")
     plt.close()
 
-
-def plotUtility(filename):
+def plotStabilityMetric(filename):
     """
-        First line is thresholds: thresholdOfNode1,.., thresholdOfNodeN
-        row format: utilityOfNode1, .., utilityofNodeN
+    row format: variance of ratio of distance from expected utility value for node_1,..,node_n
+
+    calculate the stability metric, i.e, average std. deviation of rows
     """
-    # 1. Extract data
-    log = np.loadtxt(filename + "UtilityDataBTC", delimiter=",")
-    nNodes = len(log[0])
-    colors = ['-r', '-g', '-b']
-
-    utilityValsBTC = [ [] for i in range(nNodes) ]
-    thresholdsBTC, expRoundsBTC = log[0], log[1]
-    for row in log[2:]:
-        for i in range(nNodes):
-            utilityValsBTC[i].append(row[i])
-
-    log = np.loadtxt(filename + "UtilityDataFTC", delimiter=",")
-    thresholdsFTC, expRoundsFTC = log[0], log[1]
-    utilityValsFTC = [ [] for i in range(nNodes) ]
-    for row in log[2:]:
-        for i in range(nNodes):
-            utilityValsFTC[i].append(row[i])
-
-    # 2. Plot data
-    plt.figure(figsize=(10,10))
-    # -- plotting vertical expected rounds line
-    for i in range(len(expRoundsBTC)):
-        plt.axvline(x=expRoundsBTC[i], color='k', linestyle='-')
-    # -- plotting horizontal threshold line
-    for i in range(len(thresholdsBTC)):
-        plt.axhline(y=thresholdsBTC[i], color='k', linestyle='-')
-    # -- plotting utility value vs. rounds
-    for i in range(len(utilityValsBTC)):
-        plt.plot(utilityValsBTC[i], colors[i%3], label='Node_' + str(i) )
-    # -- legend of plot
-    plt.xlabel("Rounds")
-    plt.ylabel("Value of utility")
+    # 1. fairness metric for btc
+    logBTC = np.loadtxt(filename + "StabilityDataBTC", delimiter=",")
+    avgStdDevBTC = []
+    for variances in logBTC:
+        avgStdDevBTC.append( np.mean(variances) )
+    np.sqrt(avgStdDevBTC)
+    # 2. fairness metric for ftc
+    logFTC = np.loadtxt(filename + "StabilityDataFTC", delimiter=",")
+    avgStdDevFTC = []
+    for variances in logFTC:
+        avgStdDevFTC.append( np.mean(variances) )
+    np.sqrt(avgStdDevBTC)
+    # 3. plot both in a plot
+    plt.figure(figsize=(5,5))
+    plt.plot(avgStdDevBTC, '-y', label='Bitcoin')
+    plt.plot(avgStdDevFTC, '-g', label='Fruitchain')
+    plt.xlabel("Simulations")
+    plt.ylabel("Stability Metric")
     plt.legend()
-    plt.savefig(filename + "BTCUtility.png")
-    plt.close()
-
-    plt.figure(figsize=(10,10))
-    # -- plotting vertical expected rounds line
-    for i in range(len(expRoundsFTC)):
-        plt.axvline(x=expRoundsFTC[i], color='k', linestyle='-')
-    # -- plotting horizontal threshold line
-    for i in range(len(thresholdsFTC)):
-        plt.axhline(y=thresholdsFTC[i], color='k', linestyle='-')
-    # -- plotting utility value vs. rounds
-    for i in range(len(utilityValsFTC)):
-        plt.plot(utilityValsFTC[i], colors[i%3], label='Node_' + str(i) )
-    # -- legend of plot
-    plt.xlabel("Rounds")
-    plt.ylabel("Value of utility")
-    plt.legend()
-    plt.savefig(filename + "FTCUtility.png")
+    plt.savefig(filename + "stabilitiyMetric.png")
     plt.close()

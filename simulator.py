@@ -19,12 +19,13 @@ class Simulator:
         self.pF = pF
         self.hashFracs = hashFracs
         self.k = k
-        self.r = f
+        self.r = r
         self.avgOver = avgOver
-        self.r = 1
 
         self.fairnessLogBTC = []
+        self.stabilityLogBTC = []
         self.fairnessLogFTC = []
+        self.stabilityLogFTC = []
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.k, self.r)
@@ -32,7 +33,6 @@ class Simulator:
         for i in range(self.n):
             self.nodes.append(Node(i, self.hashFracs[i], self.environment))
         self.environment.initializeNodes(self.nodes)
-        self.r = 1
 
     def run(self, filename):
         """ Runs the simulation for r rounds, averaged over avgOver times """
@@ -42,30 +42,47 @@ class Simulator:
                 self.environment.step(j)
                 if j%50000 == 0:
                     print('Round:' + str(j) + ' has finished.')
-            self.saveStabilityData()
-            print('Simulation for r='+str(j) + ' rounds has finished!')
+            print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
-            self.writeStabilityData(filename)
+            self.saveFairnessData()
+            self.saveStabilityData()
+        print("All simulations have finished!")
         print('Writing results to file: ' + filename)
+        self.writeFairnessData(filename)
+        self.writeStabilityData(filename)
         print("Finished!")
-
 
     def saveFairnessData(self):
         distancesBTC, distancesFTC = [], []
         for node in self.nodes:
-            rewardFractionBTC = node.totalRewardBTC / self.environment.totalRewardBTC
-            rewardFractionFTC = node.totalRewardFTC / self.environment.totalRewardFTC
-            distancesBTC.append( abs(node.hashFrac - rewardFractionBTC) )
-            distancesFTC.append( abs(node.hashFrac - rewardFractionFTC) )
+            expRewardBTC = self.environment.totalRewardBTC * node.hashFrac
+            expRewardFTC = self.environment.totalRewardFTC * node.hashFrac
+            distancesBTC.append( abs(node.totalRewardBTC - expRewardBTC) / expRewardBTC )
+            distancesFTC.append( abs(node.totalRewardFTC - expRewardFTC) / expRewardFTC )
         self.fairnessLogBTC.append(distancesBTC)
-        self.distanceLogFTC.append(distancesFTC)
+        self.fairnessLogFTC.append(distancesFTC)
 
-    def writeFairnessData(self):
+    def saveStabilityData(self):
+        """
+        Standard deviation from the expected utility curve. Node_1,..,Node_n .
+        """
+        variancesBTC, variancesFTC = [], []
+        for node in self.nodes:
+            distancesBTC, distancesFTC = [], []
+            for i in range(self.r):
+                distancesBTC.append( abs(node.utilityLogBTC[i][0] - node.utilityLogBTC[i][1]) / node.utilityLogBTC[i][1] )
+                distancesFTC.append( abs(node.utilityLogFTC[i][0] - node.utilityLogFTC[i][1]) / node.utilityLogFTC[i][1] )
+            variancesBTC.append( np.var(distancesBTC) )
+            variancesFTC.append( np.var(distancesFTC) )
+        self.stabilityLogBTC.append(variancesBTC)
+        self.stabilityLogFTC.append(variancesFTC)
+
+    def writeFairnessData(self, filename):
         # 1. BTC data
         file = open(filename + "FairnessDataBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Relative distance from expected reward fraction. Node_1,.,Node_n\n" )
+        file.write("# Ratio of distance from expected share of reward for node_1,.,node_n \n" )
 
         for log in self.fairnessLogBTC:
             file.write(",".join(map(str, log)) + "\n")
@@ -75,32 +92,20 @@ class Simulator:
         file = open(filename + "FairnessDataFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Relative distance from expected reward fraction. Node_1,.,Node_n\n" )
+        file.write("# Ratio of distance from expected share of reward for node_1,.,node_n \n" )
 
-        for log in self.distanceLogFTC:
+        for log in self.fairnessLogFTC:
             file.write(",".join(map(str, log)) + "\n")
         file.close()
-
-    def saveStabilityData(self):
-        """
-        Standard deviation from the expected utility curve. Node_1, ..., Node_n .
-        """
-        for node in self.nodes:
-            distancesBTC, distances = []
-            for i in len(self.r):
-                distance = node.utility
-
-        return
-
 
     def writeStabilityData(self, filename):
         # 1. BTC data
         file = open(filename + "StabilityDataBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Relative distance from expected rounds to pass threshold. Node_1, ...,\n" )
+        file.write("# Variance of ratio of distance from expected utility value for node_1,..,node_n \n" )
 
-        for log in self.fairnessLogBTC:
+        for log in self.stabilityLogBTC:
             file.write(",".join(map(str, log)) + "\n")
         file.close()
 
@@ -108,50 +113,8 @@ class Simulator:
         file = open(filename + "StabilityDataFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Relative distance from expected rounds to pass threshold. Node_1, ..., \n")
+        file.write("# Variance of ratio of distance from expected utility value for node_1,..,node_n \n" )
 
-        for log in self.distanceLogFTC:
+        for log in self.stabilityLogFTC:
             file.write(",".join(map(str, log)) + "\n")
-        file.close()
-
-
-    def writeUtilityData(self, filename):
-        # 1. BTC data
-        file = open(filename + "UtilityDataBTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function(BTC) by round for each node, seperated by commas. First line is thresholds. Second line is expected rounds to pass them." + "\n")
-
-        thresholds, expRounds = [], []
-        for node in self.nodes:
-            thresholds.append( node.threshold )
-            expRounds.append( node.expRoundsToPassThresholdBTC )
-        file.write(",".join(map(str, thresholds)) + "\n")
-        file.write(",".join(map(str, expRounds)) + "\n")
-
-        for i in range(self.r-1):
-            roundLog = []
-            for node in self.nodes:
-                roundLog.append( node.utilityLogBTC[i][0] )
-            file.write(",".join(map(str, roundLog)) + "\n")
-        file.close()
-
-        # 2. FTC data
-        file = open(filename + "UtilityDataFTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Value of utility function(FTC) by round for each node, seperated by commas. First line is thresholds. Second line is expected rounds to pass them." + "\n")
-
-        thresholds, expRounds = [], []
-        for node in self.nodes:
-            thresholds.append( node.threshold )
-            expRounds.append( node.expRoundsToPassThresholdFTC )
-        file.write(",".join(map(str, thresholds)) + "\n")
-        file.write(",".join(map(str, expRounds)) + "\n")
-
-        for i in range(self.r-1):
-            roundLog = []
-            for node in self.nodes:
-                roundLog.append( node.utilityLogFTC[i][0] )
-            file.write(",".join(map(str, roundLog)) + "\n")
         file.close()
