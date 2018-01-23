@@ -45,11 +45,11 @@ class Simulator:
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
             self.saveFairnessData()
-            self.saveStabilityData()
+            # self.saveStabilityData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
         self.writeFairnessData(filename)
-        self.writeStabilityData(filename)
+        # self.writeStabilityData(filename)
         print("Finished!")
 
     def saveFairnessData(self):
@@ -57,8 +57,8 @@ class Simulator:
         for node in self.nodes:
             expRewardBTC = self.environment.totalRewardBTC * node.hashFrac
             expRewardFTC = self.environment.totalRewardFTC * node.hashFrac
-            distancesBTC.append( abs(node.totalRewardBTC - expRewardBTC) / expRewardBTC )
-            distancesFTC.append( abs(node.totalRewardFTC - expRewardFTC) / expRewardFTC )
+            distancesBTC.append( (abs(node.totalRewardBTC - expRewardBTC) / expRewardBTC)*100 )
+            distancesFTC.append( (abs(node.totalRewardFTC - expRewardFTC) / expRewardFTC)*100 )
         self.fairnessLogBTC.append(distancesBTC)
         self.fairnessLogFTC.append(distancesFTC)
 

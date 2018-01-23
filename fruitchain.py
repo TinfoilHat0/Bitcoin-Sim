@@ -132,7 +132,7 @@ class Environment:
             if node.passedThreshold == False and (node.nRoundsToThresholdFTC > 0 and node.nRoundsToThresholdBTC > 0):
                 node.passedThreshold = True
                 self.nPassedThreshold += 1
-            """    
+            """
         return
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
@@ -142,7 +142,7 @@ class Environment:
         Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
         miner gets everything
         """
-        if self.nodes[blockLeaderID].blockChain.length > self.k+1: # in FTC, rewards of first k blocks are discarded
+        if self.nodes[blockLeaderID].blockChain.length: # In FTC, rewards of first k blocks are discarded
             totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
             self.nodes[blockLeaderID].totalRewardBTC += totalFee
 
