@@ -20,7 +20,7 @@ def plotFairnessMetric(filename):
     for distances in logFTC:
         stdDevsFTC.append( np.var(distances) ** (1/2) )
     # 3. plot both in a plot
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(10,10))
     plt.plot(stdDevsBTC, '-y', label='Bitcoin')
     plt.plot(stdDevsFTC, '-g', label='Fruitchain')
     plt.xlabel("Simulations")
@@ -48,7 +48,7 @@ def plotStabilityMetric(filename):
         avgStdDevFTC.append( np.mean(variances) )
     np.sqrt(avgStdDevBTC)
     # 3. plot both in a plot
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(10,10))
     plt.plot(avgStdDevBTC, '-y', label='Bitcoin')
     plt.plot(avgStdDevFTC, '-g', label='Fruitchain')
     plt.xlabel("Simulations")

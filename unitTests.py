@@ -201,12 +201,12 @@ class TestEnvironment(unittest.TestCase):
         env.rewardFruitchain(5)
 
         # The following values are calculated by hand acc. to Fig 4 in Fruitchain Implementation paper
-        self.assertEqual(round(nodes[0].totalFTCReward, 3), 18.018)
-        self.assertEqual(round(nodes[1].totalFTCReward, 3), 21.582)
-        self.assertEqual(round(nodes[2].totalFTCReward, 2), 17.82)
-        self.assertEqual(round(nodes[3].totalFTCReward, 2), 17.82)
-        self.assertEqual(round(nodes[4].totalFTCReward, 2), 23.76)
-        self.assertEqual(nodes[5].totalFTCReward, 1)
+        self.assertEqual(round(nodes[0].totalRewardFTC, 3), 18.018)
+        self.assertEqual(round(nodes[1].totalRewardFTC, 3), 21.582)
+        self.assertEqual(round(nodes[2].totalRewardFTC, 2), 17.82)
+        self.assertEqual(round(nodes[3].totalRewardFTC, 2), 17.82)
+        self.assertEqual(round(nodes[4].totalRewardFTC, 2), 23.76)
+        self.assertEqual(nodes[5].totalRewardFTC, 1)
 
 if __name__ == '__main__':
     unittest.main()

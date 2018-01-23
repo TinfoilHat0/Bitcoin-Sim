@@ -117,6 +117,7 @@ class Environment:
         for node in self.nodes:
             node.logUtilityBTC(roundNum)
             node.logUtilityFTC(roundNum)
+            """
             measuredUtilityBTC = node.utilityLogBTC[-1][0]
             measuredUtilityFTC = node.utilityLogFTC[-1][0]
 
@@ -131,6 +132,7 @@ class Environment:
             if node.passedThreshold == False and (node.nRoundsToThresholdFTC > 0 and node.nRoundsToThresholdBTC > 0):
                 node.passedThreshold = True
                 self.nPassedThreshold += 1
+            """    
         return
 
     def rewardBitcoin(self, blockLeaderID, roundNum=0):
