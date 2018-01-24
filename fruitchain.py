@@ -142,9 +142,8 @@ class Environment:
         Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
         miner gets everything
         """
-        if self.nodes[blockLeaderID].blockChain.length: # In FTC, rewards of first k blocks are discarded
-            totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
-            self.nodes[blockLeaderID].totalRewardBTC += totalFee
+        totalFee = self.nodes[blockLeaderID].blockChain.head.totalFee
+        self.nodes[blockLeaderID].totalRewardBTC += totalFee
 
     def rewardFruitchain(self, blockLeaderID, roundNum=0):
         """

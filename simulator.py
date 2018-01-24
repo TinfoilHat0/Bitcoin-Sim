@@ -79,23 +79,23 @@ class Simulator:
 
     def writeFairnessData(self, filename):
         # 1. BTC data
-        file = open(filename + "FairnessDataBTC", 'w')
+        file = open(filename + "FairnessMetricBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Ratio of distance from expected share of reward for node_1,.,node_n \n" )
+        file.write("# Fairness metric of system\n" )
 
         for log in self.fairnessLogBTC:
-            file.write(",".join(map(str, log)) + "\n")
+            file.write( str(np.var(log) ** 0.5) + "\n")
         file.close()
 
         # 2.FTC data
-        file = open(filename + "FairnessDataFTC", 'w')
+        file = open(filename + "FairnessMetricFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Ratio of distance from expected share of reward for node_1,.,node_n \n" )
+        file.write("#  Fairness metric of system \n" )
 
         for log in self.fairnessLogFTC:
-            file.write(",".join(map(str, log)) + "\n")
+            file.write( str(np.var(log) ** 0.5) + "\n")
         file.close()
 
     def writeStabilityData(self, filename):

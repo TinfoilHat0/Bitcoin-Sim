@@ -3,31 +3,67 @@ import math
 import matplotlib.pyplot as plt
 
 
-def plotFairnessMetric(filename):
+def plotFairnessMetric(lengths, c0Vals, hashSettings):
     """
-    row format: ratio of distance from expected share of reward for  node_1, .. , node_n
+    row format: fairnessMetric
+    """
+    filename = "sim_results/"
+    # 1. Length tests
+    fName = filename + "lengthTests/"
+    metricLengthBTC, metricLengthFTC = [], []
+    for length in lengths:
+        btcLog = np.loadtxt(fName + "length" + str(length) + "_" + "FairnessMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "length" + str(length) + "_" + "FairnessMetricFTC", delimiter=",")
+        metricLengthBTC.append(sum(btcLog) / len(btcLog))
+        metricLengthFTC.append(sum(ftcLog) / len(ftcLog))
+    # 2. c0 tests
+    fName = filename + "c0Tests/"
+    metricC0BTC, metricC0FTC = [], []
+    for c0 in c0Vals:
+        btcLog = np.loadtxt(fName + "c0" + str(c0) + "_" + "FairnessMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "c0" + str(c0) + "_" + "FairnessMetricFTC", delimiter=",")
+        metricC0BTC.append(sum(btcLog) / len(btcLog))
+        metricC0FTC.append(sum(ftcLog) / len(ftcLog))
+    # 3. hashSettings tests
+    fName = filename + "hashFracTests/"
+    metricHashBTC, metricHashFTC = [], []
+    for i in range(len(hashSettings)):
+        btcLog = np.loadtxt(fName + "hashSetting" + str(i) + "_" + "FairnessMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "hashSetting" + str(i) + "_" + "FairnessMetricFTC", delimiter=",")
+        metricHashBTC.append(sum(btcLog) / len(btcLog))
+        metricHashFTC.append(sum(ftcLog) / len(ftcLog))
 
-    calculate the fairness metric, i.e, std.dev of rows
-    """
-    # 1. fairness metric for btc
-    logBTC = np.loadtxt(filename + "FairnessDataBTC", delimiter=",")
-    stdDevsBTC = []
-    for distances in logBTC:
-        stdDevsBTC.append( np.var(distances) ** (1/2) )
-    # 2. fairness metric for ftc
-    logFTC = np.loadtxt(filename + "FairnessDataFTC", delimiter=",")
-    stdDevsFTC = []
-    for distances in logFTC:
-        stdDevsFTC.append( np.var(distances) ** (1/2) )
-    # 3. plot both in a plot
-    plt.figure(figsize=(10,10))
-    plt.plot(stdDevsBTC, '-y', label='Bitcoin')
-    plt.plot(stdDevsFTC, '-g', label='Fruitchain')
-    plt.xlabel("Simulations")
+
+
+    # 1. Plot length tests
+    plt.figure(figsize=(8,8))
+    plt.plot(metricLengthBTC, '-y', label='Bitcoin')
+    plt.plot(metricLengthFTC, '-g', label='Fruitchain')
+    plt.xlabel("Window Length(days)")
     plt.ylabel("Fairness Metric")
     plt.legend()
-    plt.savefig(filename + "fairnessMetric.png")
+    plt.savefig(filename + "fairnessMetricLength.png")
     plt.close()
+    # 2. Plot c0 tests
+    plt.figure(figsize=(8,8))
+    plt.plot(metricC0BTC, '-y', label='Bitcoin')
+    plt.plot(metricC0FTC, '-g', label='Fruitchain')
+    plt.xlabel("$c_0$")
+    plt.ylabel("Fairness Metric")
+    plt.legend()
+    plt.savefig(filename + "fairnessMetricC0.png")
+    plt.close()
+    # 3. Plot hash fraction setting tests
+    plt.figure(figsize=(8,8))
+    plt.plot(metricHashBTC, '-y', label='Bitcoin')
+    plt.plot(metricHashFTC, '-g', label='Fruitchain')
+    plt.xlabel("Hash Rate Setting ID")
+    plt.ylabel("Fairness Metric")
+    plt.legend()
+    plt.savefig(filename + "fairnessMetricHashSetting.png")
+    plt.close()
+
+
 
 def plotStabilityMetric(filename):
     """
