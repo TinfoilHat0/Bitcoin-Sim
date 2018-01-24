@@ -37,8 +37,11 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
 
     # 1. Plot length tests
     plt.figure(figsize=(8,8))
-    plt.plot(metricLengthBTC, '-y', label='Bitcoin')
-    plt.plot(metricLengthFTC, '-g', label='Fruitchain')
+    xi = [i for i in range(len(lengths))]
+    plt.ylim(0, 2 * max(metricLengthBTC))
+    plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.xticks(xi, lengths)
     plt.xlabel("Window Length(days)")
     plt.ylabel("Fairness Metric")
     plt.legend()
@@ -46,8 +49,11 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
     plt.close()
     # 2. Plot c0 tests
     plt.figure(figsize=(8,8))
-    plt.plot(metricC0BTC, '-y', label='Bitcoin')
-    plt.plot(metricC0FTC, '-g', label='Fruitchain')
+    xi = [i for i in range(len(c0Vals))]
+    plt.ylim(0, 2 * max(metricC0BTC))
+    plt.plot(xi, metricC0BTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, metricC0FTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.xticks(xi, c0Vals)
     plt.xlabel("$c_0$")
     plt.ylabel("Fairness Metric")
     plt.legend()
@@ -55,8 +61,11 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
     plt.close()
     # 3. Plot hash fraction setting tests
     plt.figure(figsize=(8,8))
-    plt.plot(metricHashBTC, '-y', label='Bitcoin')
-    plt.plot(metricHashFTC, '-g', label='Fruitchain')
+    xi = [i+1 for i in range(len(hashSettings))]
+    plt.ylim(0, 2 * max(metricHashBTC))
+    plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.xticks(xi, xi)
     plt.xlabel("Hash Rate Setting ID")
     plt.ylabel("Fairness Metric")
     plt.legend()
