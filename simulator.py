@@ -55,10 +55,10 @@ class Simulator:
     def saveFairnessData(self):
         distancesBTC, distancesFTC = [], []
         for node in self.nodes:
-            expRewardBTC = self.environment.totalRewardBTC * node.hashFrac
-            expRewardFTC = self.environment.totalRewardFTC * node.hashFrac
-            distancesBTC.append( (abs(node.totalRewardBTC - expRewardBTC) / expRewardBTC)*100 )
-            distancesFTC.append( (abs(node.totalRewardFTC - expRewardFTC) / expRewardFTC)*100 )
+            fairRewardBTC = self.environment.totalRewardBTC * node.hashFrac
+            fairRewardFTC = self.environment.totalRewardFTC * node.hashFrac
+            distancesBTC.append( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
+            distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
         self.fairnessLogBTC.append(distancesBTC)
         self.fairnessLogFTC.append(distancesFTC)
 
@@ -85,7 +85,7 @@ class Simulator:
         file.write("# Fairness metric of system\n" )
 
         for log in self.fairnessLogBTC:
-            file.write( str(np.var(log) ** 0.5) + "\n")
+            file.write( str(np.var(log)) + "\n")
         file.close()
 
         # 2.FTC data
@@ -95,7 +95,7 @@ class Simulator:
         file.write("#  Fairness metric of system \n" )
 
         for log in self.fairnessLogFTC:
-            file.write( str(np.var(log) ** 0.5) + "\n")
+            file.write( str(np.mean(log)) + "\n")
         file.close()
 
     def writeStabilityData(self, filename):

@@ -34,7 +34,6 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
         metricHashFTC.append(sum(ftcLog) / len(ftcLog))
 
 
-
     # 1. Plot length tests
     plt.figure(figsize=(8,8))
     xi = [i for i in range(len(lengths))]
