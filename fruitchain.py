@@ -39,14 +39,17 @@ class Environment:
 
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
         self.expFruitPerBlock = self.pF / self. p
+        self.stdDevFruitPerBlock = ( (self.pF**2) * (2-self.p) - 1) / (self.p**2)
         self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
         self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
         self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
 
-        # Stability-Fairness tests related params
+        # Stability-Fairness-Validation tests related params
         self.nPassedThreshold = 0
         self.totalRewardBTC = 0
         self.totalRewardFTC = 0
+        self.totalBlockMined = 0
+        self.totalFruitMined = 0
 
     def initializeNodes(self, nodes):
         '''
@@ -108,6 +111,8 @@ class Environment:
         for node in self.nodes:
             self.totalRewardBTC += node.totalRewardBTC
             self.totalRewardFTC += node.totalRewardFTC
+            self.totalBlockMined += node.nBlocksMined
+            self.totalFruitMined += node.nFruitsMined
         return
 
     def logUtility(self, roundNum):

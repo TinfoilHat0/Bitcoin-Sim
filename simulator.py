@@ -26,6 +26,7 @@ class Simulator:
         self.stabilityLogBTC = []
         self.fairnessLogFTC = []
         self.stabilityLogFTC = []
+        self.validationLog = []
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.k, self.r)
@@ -45,12 +46,29 @@ class Simulator:
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
             self.saveFairnessData()
-            # self.saveStabilityData()
+            #self.saveValidationData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
-        self.writeFairnessData(filename)
-        # self.writeStabilityData(filename)
+        #self.writeFairnessData(filename)
+        self.writeValidationData(self)
         print("Finished!")
+
+    def saveValidationData(self):
+        ''' Data used to validate correctness of implementation '''
+        fruitPerBlock = self.environment.totalFruitMined / self.environment.totalBlockMined
+        self.validationLog(fruitPerBlock)
+
+    def writeValidationData(self):
+        file = open(filename + "ValidationData", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Validation data. First data is the required parameters to calculate theoretical expectations." )
+        params = [self.p, self.pF]
+        file.write(",".join(map(str, params)) + "\n")
+
+        for log in self.validationLog:
+            file.write( str(log) + "\n")
+        file.close()
 
     def saveFairnessData(self):
         distancesBTC, distancesFTC = [], []
