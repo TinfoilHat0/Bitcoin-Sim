@@ -39,7 +39,7 @@ class Environment:
 
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
         self.expFruitPerBlock = self.pF / self. p
-        self.expNormalFruitReward = (1-self.c1)*self.coinbaseReward / self.k*(self.expFruitPerBlock+1)
+        self.expNormalFruitReward = ( (1-self.c1)*self.coinbaseReward ) / ( self.k*(self.expFruitPerBlock+1) )
         self.expFTCPerFruit = self.k*self.expNormalFruitReward * (1 - self.c2 + self.c3)
         self.expFTCPerBlock = self.c1*self.coinbaseReward + (1-self.c1)*self.coinbaseReward*(self.c2 - self.c3)
 
