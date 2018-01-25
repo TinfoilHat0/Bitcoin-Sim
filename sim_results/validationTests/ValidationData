@@ -1,9 +1,0 @@
-#r:1440 p:0.1 pF:1 k: 16 c1:0.01 c2:0.1 c3:0.01
-# Validation data. First data is the required parameters to calculate theoretical expectations.
-# First line: pF,p
-1,0.1
-9.863013698630137
-9.35064935064935
-10.992366412213741
-11.52
-9.72972972972973

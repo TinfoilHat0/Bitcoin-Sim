@@ -26,7 +26,9 @@ class Simulator:
         self.stabilityLogBTC = []
         self.fairnessLogFTC = []
         self.stabilityLogFTC = []
-        self.validationLog = []
+        self.fruitPerBlockLog = []
+        self.FTCPerFruitLog = []
+        self.FTCPerBlockLog = []
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.k, self.r)
@@ -46,28 +48,53 @@ class Simulator:
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
             #self.saveFairnessData()
-            self.saveValidationData()
+            self.saveFruitPerBlockData()
+            self.saveFTCPerFruitData()
+            self.saveFTCPerBlockData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
+        self.writeFruitPerBlockData(filename)
+        self.writeFTCPerFruitData(filename)
+        self.writeFTCPerBlockData(filename)
         #self.writeFairnessData(filename)
-        self.writeValidationData(filename)
         print("Finished!")
 
-    def saveValidationData(self):
-        ''' Data used to validate correctness of implementation '''
+    def saveFruitPerBlockData(self):
         fruitPerBlock = self.environment.totalFruitMined / self.environment.totalBlockMined
-        self.validationLog.append(fruitPerBlock)
+        self.fruitPerBlockLog.append( (fruitPerBlock, self.environment.expFruitPerBlock) )
 
-    def writeValidationData(self, filename):
-        file = open(filename + "ValidationData", 'w')
+    def saveFTCPerFruitData(self):
+        FTCPerFruit = self.environment.totalFTCFromFruits / self.environment.totalFruitMined 
+        self.FTCPerFruitLog.append( (FTCPerFruit, self.environment.expFTCPerFruit) )
+
+    def saveFTCPerBlockData(self):
+        FTCPerBlock = self.environment.totalFTCFromBlocks / self.environment.totalBlockMined
+        self.FTCPerBlockLog.append( (FTCPerBlock , self.environment.expFTCPerBlock) )
+
+    def writeFruitPerBlockData(self, filename):
+        file = open(filename + "FruitPerBlock", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Validation data. First data is the required parameters to calculate theoretical expectations.\n" )
-        file.write("# First line: pF,p\n" )
-        params = [self.pF, self.p]
-        file.write(",".join(map(str, params)) + "\n")
 
-        for log in self.validationLog:
+        for log in self.fruitPerBlockLog:
+            file.write( str(log) + "\n")
+        file.close()
+
+    def writeFTCPerFruitData(self, filename):
+        file = open(filename + "FTCPerFruit", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+
+        for log in self.FTCPerFruitLog:
+            file.write( str(log) + "\n")
+        file.close()
+
+    def writeFTCPerBlockData(self, filename):
+        file = open(filename + "FTCPerBlock", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+
+        for log in self.FTCPerBlockLog:
             file.write( str(log) + "\n")
         file.close()
 

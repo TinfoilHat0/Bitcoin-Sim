@@ -3,7 +3,6 @@ import math
 import matplotlib.pyplot as plt
 
 
-
 def plotFairnessMetric(lengths, c0Vals, hashSettings):
     """
     row format: fairnessMetric
@@ -72,27 +71,30 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
     plt.savefig(filename + "fairnessMetricHashSetting.png")
     plt.close()
 
-def plotValidationData():
+def plotFruitPerBlockData(p=1/100, pF=1/10):
     """
+    Inputs are required params. to calculate theoretical fit
     row format: fairnessMetric
     """
     filename = "sim_results/validationTests/ValidationData"
-    log = [np.array(map(int, line.split(","))) for line in open(filename)]
-
+    log = np.loadtxt(filename, delimiter=",")
     fruitsPerBlock = []
     for data in log:
         fruitsPerBlock.append(data)
-    expFruitsPerBlock = [ (log[0][0] / log[0][1]) for i in range(len(fruitsPerBlock)) ]
+
+    fruitsPerBlock = np.asarray(fruitsPerBlock)
+    sampleStdDev = np.var(fruitsPerBlock) ** 0.5
+    mean = np.mean(fruitsPerBlock)
+    expected = pF / p
 
     plt.figure(figsize=(8,8))
-    xi = [i for i in range(len(fruitsPerBlock))]
-    plt.ylim(0, 2 * max(fruitsPerBlock))
-    plt.plot(xi, expFruitsPerBlock, marker='o', linestyle='--', color='r', label='Expected')
-    plt.plot(xi, fruitsPerBlock, marker='o', linestyle='--', color='b', label='Measured')
-    plt.xticks(xi, lengths)
-    plt.xlabel("Simulations")
-    plt.ylabel("Avg. fruits per block")
+    xi = [i+1 for i in range(len(fruitsPerBlock))]
+    plt.ylim(0, 2 * expected)
+    plt.plot(xi, [expected for i in range(len(xi))], marker='o', color='b', label='Expected')
+    plt.plot(xi, fruitsPerBlock, marker='o', color='r', label='Measured')
+    plt.xticks(xi, xi)
+    plt.xlabel("Simulation runs")
+    plt.ylabel("Avg. number of fruits per block")
     plt.legend()
-    plt.savefig(filename + "ValidationData.png")
+    plt.savefig(filename + "perBlock.png")
     plt.close()
-    
