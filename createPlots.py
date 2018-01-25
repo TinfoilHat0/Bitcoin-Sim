@@ -3,12 +3,13 @@ import math
 import matplotlib.pyplot as plt
 
 
+
 def plotFairnessMetric(lengths, c0Vals, hashSettings):
     """
     row format: fairnessMetric
     """
-    filename = "sim_results/"
-    # 1. Length tests
+    filename = "sim_results/fairnessTests"
+    # 1. length tests
     fName = filename + "lengthTests/"
     metricLengthBTC, metricLengthFTC = [], []
     for length in lengths:
@@ -71,32 +72,27 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
     plt.savefig(filename + "fairnessMetricHashSetting.png")
     plt.close()
 
-
-
-def plotStabilityMetric(filename):
+def plotValidationData():
     """
-    row format: variance of ratio of distance from expected utility value for node_1,..,node_n
-
-    calculate the stability metric, i.e, average std. deviation of rows
+    row format: fairnessMetric
     """
-    # 1. fairness metric for btc
-    logBTC = np.loadtxt(filename + "StabilityDataBTC", delimiter=",")
-    avgStdDevBTC = []
-    for variances in logBTC:
-        avgStdDevBTC.append( np.mean(variances) )
-    np.sqrt(avgStdDevBTC)
-    # 2. fairness metric for ftc
-    logFTC = np.loadtxt(filename + "StabilityDataFTC", delimiter=",")
-    avgStdDevFTC = []
-    for variances in logFTC:
-        avgStdDevFTC.append( np.mean(variances) )
-    np.sqrt(avgStdDevBTC)
-    # 3. plot both in a plot
-    plt.figure(figsize=(10,10))
-    plt.plot(avgStdDevBTC, '-y', label='Bitcoin')
-    plt.plot(avgStdDevFTC, '-g', label='Fruitchain')
+    filename = "sim_results/validationTests/ValidationData"
+    log = [np.array(map(int, line.split(","))) for line in open(filename)]
+
+    fruitsPerBlock = []
+    for data in log:
+        fruitsPerBlock.append(data)
+    expFruitsPerBlock = [ (log[0][0] / log[0][1]) for i in range(len(fruitsPerBlock)) ]
+
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(fruitsPerBlock))]
+    plt.ylim(0, 2 * max(fruitsPerBlock))
+    plt.plot(xi, expFruitsPerBlock, marker='o', linestyle='--', color='r', label='Expected')
+    plt.plot(xi, fruitsPerBlock, marker='o', linestyle='--', color='b', label='Measured')
+    plt.xticks(xi, lengths)
     plt.xlabel("Simulations")
-    plt.ylabel("Stability Metric")
+    plt.ylabel("Avg. fruits per block")
     plt.legend()
-    plt.savefig(filename + "stabilitiyMetric.png")
+    plt.savefig(filename + "ValidationData.png")
     plt.close()
+    

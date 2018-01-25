@@ -45,25 +45,26 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
-            self.saveFairnessData()
-            #self.saveValidationData()
+            #self.saveFairnessData()
+            self.saveValidationData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
         #self.writeFairnessData(filename)
-        self.writeValidationData(self)
+        self.writeValidationData(filename)
         print("Finished!")
 
     def saveValidationData(self):
         ''' Data used to validate correctness of implementation '''
         fruitPerBlock = self.environment.totalFruitMined / self.environment.totalBlockMined
-        self.validationLog(fruitPerBlock)
+        self.validationLog.append(fruitPerBlock)
 
-    def writeValidationData(self):
+    def writeValidationData(self, filename):
         file = open(filename + "ValidationData", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Validation data. First data is the required parameters to calculate theoretical expectations." )
-        params = [self.p, self.pF]
+        file.write("# Validation data. First data is the required parameters to calculate theoretical expectations.\n" )
+        file.write("# First line: pF,p\n" )
+        params = [self.pF, self.p]
         file.write(",".join(map(str, params)) + "\n")
 
         for log in self.validationLog:
@@ -79,21 +80,6 @@ class Simulator:
             distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
         self.fairnessLogBTC.append(distancesBTC)
         self.fairnessLogFTC.append(distancesFTC)
-
-    def saveStabilityData(self):
-        """
-        Standard deviation from the expected utility curve. Node_1,..,Node_n .
-        """
-        variancesBTC, variancesFTC = [], []
-        for node in self.nodes:
-            distancesBTC, distancesFTC = [], []
-            for i in range(self.r):
-                distancesBTC.append( abs(node.utilityLogBTC[i][0] - node.utilityLogBTC[i][1]) / node.utilityLogBTC[i][1] )
-                distancesFTC.append( abs(node.utilityLogFTC[i][0] - node.utilityLogFTC[i][1]) / node.utilityLogFTC[i][1] )
-            variancesBTC.append( np.var(distancesBTC) )
-            variancesFTC.append( np.var(distancesFTC) )
-        self.stabilityLogBTC.append(variancesBTC)
-        self.stabilityLogFTC.append(variancesFTC)
 
     def writeFairnessData(self, filename):
         # 1. BTC data
@@ -114,25 +100,4 @@ class Simulator:
 
         for log in self.fairnessLogFTC:
             file.write( str(np.mean(log)) + "\n")
-        file.close()
-
-    def writeStabilityData(self, filename):
-        # 1. BTC data
-        file = open(filename + "StabilityDataBTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Variance of ratio of distance from expected utility value for node_1,..,node_n \n" )
-
-        for log in self.stabilityLogBTC:
-            file.write(",".join(map(str, log)) + "\n")
-        file.close()
-
-        # 2. FTC data
-        file = open(filename + "StabilityDataFTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Variance of ratio of distance from expected utility value for node_1,..,node_n \n" )
-
-        for log in self.stabilityLogFTC:
-            file.write(",".join(map(str, log)) + "\n")
         file.close()
