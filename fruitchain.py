@@ -38,10 +38,18 @@ class Environment:
         self.consumptionPerDevice = 1.372 # KWh
 
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
+
         self.expFruitPerBlock = self.pF / self. p
-        self.expNormalFruitReward = ( (1-self.c1)*self.coinbaseReward ) / ( self.k*(self.expFruitPerBlock+1) )
-        self.expFTCPerFruit = self.k*self.expNormalFruitReward * (1 - self.c2 + self.c3)
-        self.expFTCPerBlock = self.c1*self.coinbaseReward + (1-self.c1)*self.coinbaseReward*(self.c2 - self.c3)
+        self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
+        self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
+        self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
+
+
+        self.expFruitPerBlock2 = self.pF / self. p
+        self.expNormalFruitReward2 = ( (1-self.c1)*self.coinbaseReward ) / ( self.k*(self.expFruitPerBlock+1) )
+        self.expFTCPerFruit2 = self.k * self.expNormalFruitReward * (1 - self.c2 + self.c3)
+        self.expFTCPerBlock2 = self.c1*self.coinbaseReward + self.k * (self.expFruitPerBlock2*self.expNormalFruitReward2*(self.c2-self.c3)  + self.expNormalFruitReward2)
+
 
         # Stability-Fairness-Validation tests related params
         self.nPassedThreshold = 0
