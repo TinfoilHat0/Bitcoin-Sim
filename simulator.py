@@ -64,7 +64,7 @@ class Simulator:
         self.fruitPerBlockLog.append( (fruitPerBlock, self.environment.expFruitPerBlock) )
 
     def saveFTCPerFruitData(self):
-        FTCPerFruit = self.environment.totalFTCFromFruits / self.environment.totalFruitMined 
+        FTCPerFruit = self.environment.totalFTCFromFruits / self.environment.totalFruitMined
         self.FTCPerFruitLog.append( (FTCPerFruit, self.environment.expFTCPerFruit) )
 
     def saveFTCPerBlockData(self):
@@ -77,25 +77,25 @@ class Simulator:
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
 
         for log in self.fruitPerBlockLog:
-            file.write( str(log) + "\n")
+            file.write(','.join(map(str, log)) + "\n")
         file.close()
 
     def writeFTCPerFruitData(self, filename):
-        file = open(filename + "FTCPerFruit", 'w')
+        file = open(filename + "RewardPerFruit", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
 
         for log in self.FTCPerFruitLog:
-            file.write( str(log) + "\n")
+            file.write(','.join(map(str, log)) + "\n")
         file.close()
 
     def writeFTCPerBlockData(self, filename):
-        file = open(filename + "FTCPerBlock", 'w')
+        file = open(filename + "RewardPerBlock", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
 
         for log in self.FTCPerBlockLog:
-            file.write( str(log) + "\n")
+            file.write(','.join(map(str, log)) + "\n")
         file.close()
 
     def saveFairnessData(self):

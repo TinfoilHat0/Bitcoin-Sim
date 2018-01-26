@@ -66,10 +66,10 @@ class Block:
 
 
 class Blockchain:
-    def __init__(self):
+    def __init__(self, k=16):
         self.chain = [] # just a list, not a tree, can be changed later if we broadcast blocks
         self.length = 0
-        self.append(Block()) # every chain starts with the genesis
+        self.append(Block()) # TODO: length of genesis is k=16 to bootstrap fruitchain scheme
 
     def append(self, b):
         self.chain.append(b)

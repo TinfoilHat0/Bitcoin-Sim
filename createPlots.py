@@ -71,30 +71,74 @@ def plotFairnessMetric(lengths, c0Vals, hashSettings):
     plt.savefig(filename + "fairnessMetricHashSetting.png")
     plt.close()
 
-def plotFruitPerBlockData(p=1/100, pF=1/10):
+def plotValidationData(c0Vals):
     """
     Inputs are required params. to calculate theoretical fit
     row format: fairnessMetric
     """
-    filename = "sim_results/validationTests/ValidationData"
-    log = np.loadtxt(filename, delimiter=",")
-    fruitsPerBlock = []
-    for data in log:
-        fruitsPerBlock.append(data)
+    fName = "sim_results/validationTests/"
+    # 1. Collect data
+    measuredFruitPerBlock, expectedFruitPerBlock = [], []
+    measuredFTCPerFruit, expectedFTCPerFruit = [], []
+    measuredFTCPerBlock, expectedFTCPerBlock = [], []
+    for c0 in c0Vals:
+        # 1. FruitPerBlock
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "FruitPerBlock", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFruitPerBlock.append( sm/len(log) )
+        expectedFruitPerBlock.append( log[0][0] )
+        # 2. RewardPerFruit
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerFruit", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFTCPerFruit.append( sm/len(log) )
+        expectedFTCPerFruit.append( log[0][0] )
+        # 3. RewardPerBlock
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerBlock", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFTCPerBlock.append( sm/len(log) )
+        expectedFTCPerBlock.append( log[0][0] )
 
-    fruitsPerBlock = np.asarray(fruitsPerBlock)
-    sampleStdDev = np.var(fruitsPerBlock) ** 0.5
-    mean = np.mean(fruitsPerBlock)
-    expected = pF / p
-
+    # 1. Plot FruitPerBlock
     plt.figure(figsize=(8,8))
-    xi = [i+1 for i in range(len(fruitsPerBlock))]
-    plt.ylim(0, 2 * expected)
-    plt.plot(xi, [expected for i in range(len(xi))], marker='o', color='b', label='Expected')
-    plt.plot(xi, fruitsPerBlock, marker='o', color='r', label='Measured')
-    plt.xticks(xi, xi)
-    plt.xlabel("Simulation runs")
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFruitPerBlock, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFruitPerBlock, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
     plt.ylabel("Avg. number of fruits per block")
     plt.legend()
-    plt.savefig(filename + "perBlock.png")
+    plt.savefig(fName + "FruitPerBlock.png")
+    plt.close()
+
+    # 2. Plot RewardPerFruit
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFTCPerFruit, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFTCPerFruit, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
+    plt.ylabel("Reward per fruit (BTC)")
+    plt.legend()
+    plt.savefig(fName + "RewardPerFruit.png")
+    plt.close()
+
+    # 2. Plot RewardPerFruit
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFTCPerBlock, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFTCPerBlock, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
+    plt.ylabel("Reward per block (BTC)")
+    plt.legend()
+    plt.savefig(fName + "RewardPerBlock.png")
     plt.close()

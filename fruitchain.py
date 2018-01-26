@@ -39,16 +39,16 @@ class Environment:
 
         # theoretical calculations for fruitchain (see analysis paper), x=self.coinbaseReward is expected block reward
 
-        self.expFruitPerBlock = self.pF / self. p
-        self.expNormalFruitReward = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
-        self.expFTCPerFruit = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
-        self.expFTCPerBlock = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
-
-
         self.expFruitPerBlock2 = self.pF / self. p
-        self.expNormalFruitReward2 = ( (1-self.c1)*self.coinbaseReward ) / ( self.k*(self.expFruitPerBlock+1) )
-        self.expFTCPerFruit2 = self.k * self.expNormalFruitReward * (1 - self.c2 + self.c3)
-        self.expFTCPerBlock2 = self.c1*self.coinbaseReward + self.k * (self.expFruitPerBlock2*self.expNormalFruitReward2*(self.c2-self.c3)  + self.expNormalFruitReward2)
+        self.expNormalFruitReward2 = self.p * (1-self.c1)*self.coinbaseReward / ( self.k*(self.pF + self.p) )
+        self.expFTCPerFruit2 = ( self.p * (1-self.c1) * self.coinbaseReward * (1-self.c2 + self.c3) ) / (self.pF + self.p)
+        self.expFTCPerBlock2 = ( (1-self.c1)*self.coinbaseReward*self.p ) / (self.pF + self.p) * ( (self.pF/self.p) * (self.c2-self.c3) + 1) + self.c1*self.coinbaseReward
+
+
+        self.expFruitPerBlock = self.pF / self. p
+        self.expNormalFruitReward = ( (1-self.c1)*self.coinbaseReward ) / ( self.k*(self.expFruitPerBlock+1) )
+        self.expFTCPerFruit = self.k * self.expNormalFruitReward * (1 - self.c2 + self.c3)
+        self.expFTCPerBlock = self.c1*self.coinbaseReward + self.k * (self.expFruitPerBlock*self.expNormalFruitReward*(self.c2-self.c3)  + self.expNormalFruitReward)
 
 
         # Stability-Fairness-Validation tests related params
@@ -181,13 +181,13 @@ class Environment:
             # 3. Iterate over last k blocks and distribute rewards to miners
             for b in blockChain[-self.k-1:-1]:
                 for f in b.fruits:
-                    l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
-                    dL = self.c3 * (1 - l/(self.k-1))
-                    self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].totalFTCFromFruits += n0*(1 - self.c2 + dL)
+                        l = f.contBlockHeight - f.hangBlockHeight - 1 # number of blocks between hanging and containing block]
+                        dL = self.c3 * (1 - l/(self.k-1))
+                        self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
+                        self.nodes[f.minerID].totalFTCFromFruits += n0*(1 - self.c2 + dL)
 
-                    self.nodes[b.minerID].totalRewardFTC += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].totalFTCFromBlocks += n0*(self.c2 - dL)
+                        self.nodes[b.minerID].totalRewardFTC += n0*(self.c2 - dL)
+                        self.nodes[b.minerID].totalFTCFromBlocks += n0*(self.c2 - dL)
                 self.nodes[b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
                 self.nodes[b.minerID].totalFTCFromBlocks += n0
             # 4. Slide the window and adjust the number of fruits
