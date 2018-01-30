@@ -51,6 +51,7 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
+            self.saveAvgGainPerRoundData()
             self.saveFruitPerBlockData()
             self.saveFTCPerFruitData()
             self.saveFTCPerBlockData()
@@ -58,6 +59,7 @@ class Simulator:
             #self.saveStabilityData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
+        self.writeAvgGainPerRoundData(filename)
         self.writeFruitPerBlockData(filename)
         self.writeFTCPerFruitData(filename)
         self.writeFTCPerBlockData(filename)
@@ -65,6 +67,14 @@ class Simulator:
         #self.writeStabilityData(filename)
         print("Finished!")
 
+
+    def saveAvgGainPerRoundData(self):
+        # Avg. gain of a randomly chosen node
+        node = random.choice(self.nodes)
+        avgGainBTC = node.totalRewardBTC / self.r
+        avgGainFTC = node.totalRewardFTC / self.r
+        self.avgGainPerRoundBTCLog.append( (avgGainBTC, node.expGainPerRoundBTC) )
+        self.avgGainPerRoundFTCLog.append( (avgGainFTC, node.expGainPerRoundFTC) )
 
     def saveFruitPerBlockData(self):
         fruitPerBlock = self.environment.totalFruitMined / self.environment.totalBlockMined
@@ -77,6 +87,24 @@ class Simulator:
     def saveFTCPerBlockData(self):
         FTCPerBlock = self.environment.totalFTCFromBlocks / self.environment.totalBlockMined
         self.FTCPerBlockLog.append( (FTCPerBlock , self.environment.expFTCPerBlock) )
+
+    # Redundant coding.. redundant coding everywhere
+    def writeAvgGainPerRoundData(self, filename):
+        file = open(filename + "AvgGainPerRoundBTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+
+        for log in self.avgGainPerRoundBTCLog:
+            file.write(','.join(map(str, log)) + "\n")
+        file.close()
+
+        file = open(filename + "AvgGainPerRoundFTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+
+        for log in self.avgGainPerRoundFTCLog:
+            file.write(','.join(map(str, log)) + "\n")
+        file.close()
 
     def writeFruitPerBlockData(self, filename):
         file = open(filename + "FruitPerBlock", 'w')

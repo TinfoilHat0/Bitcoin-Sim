@@ -202,21 +202,17 @@ class Node:
         self.totalRewardByRoundBTC = []
         self.totalRewardByRoundFTC = []
 
-        # self.prMiningBlock =  self.environment.p * self.hashFrac
-        # self.prMiningFruit = self.environment.pF * self.hashFrac
-        # self.expGainPerRoundBTC = ( self.prMiningBlock*self.environment.coinbaseReward ) - self.costPerRound (these are wrong)
-        # self.expGainPerRoundFTC = ( self.prMiningBlock*self.environment.expFTCPerBlock + self.prMiningFruit*self.environment.expFTCPerFruit ) - self.costPerRound (these are wrong)
+        self.prMiningBlock =  self.environment.p * self.hashFrac
+        self.prMiningFruit = self.environment.pF * self.hashFrac
+        self.expFruitPerBlock = self.environment.expFruitPerBlock * self.hashFrac
 
-        """
-        self.expRoundsToPassThresholdBTC = ceil( self.threshold  / self.expGainPerRoundBTC )
-        self.expRoundsToPassThresholdFTC = ceil( self.threshold / self.expGainPerRoundFTC )
-        self.nRoundsToThresholdBTC = 0
-        self.nRoundsToThresholdFTC = 0
-        self.passedThreshold = False
+        # What an ugly way to write this formula ..
+        self.eWR = self.k*self.hashFrac*( (self.expFruitPerBlock+1)*self.environment.expNormalFruitReward
+        + (self.environment.expFruitPerBlock-self.expFruitPerBlock)*self.environment.expNormalFruitReward*(self.environment.c2-self.environment.c3)) \
+        + self.k*(1-self.hashFrac)*self.expFruitPerBlock*self.environment.expNormalFruitReward*(1-self.environment.c2+self.environment.c3)
 
-        self.dFromExpectedThresholdBTC = 0
-        self.dFromExpectedThresholdFTC = 0
-        """
+        self.expGainPerRoundFTC = self.environment.p*(self.environment.c1*self.environment.coinbaseReward*self.hashFrac + self.eWR)
+        self.expGainPerRoundBTC = self.hashFrac*self.environment.p*self.environment.coinbaseReward
 
     def mineFruit(self, roundNum):
         '''
