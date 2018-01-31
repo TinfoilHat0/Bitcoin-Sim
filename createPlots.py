@@ -3,6 +3,23 @@ import math
 import matplotlib.pyplot as plt
 
 
+def plotHashFracsLog(filename, hashFracsLog):
+    ctr = 0
+    for hashFracs in hashFracsLog:
+        ctr2 = 1
+        minerIDs, tmp = [], []
+        for hashFrac in hashFracs:
+            if hashFrac != 0:
+                minerIDs.append(ctr2)
+                tmp.append(hashFrac)
+            ctr2 += 1
+        labels = ['Miner' + str(id) for id in minerIDs]
+        plt.pie(tmp, labels=labels, autopct='%1.1f%%', shadow=True, startangle=140)
+        plt.axis('equal')
+        plt.savefig(filename + 'hashFracs_' + str(ctr) + '.png')
+    plt.close()
+
+
 def plotStabilityMetric(lengths=[], hashSettings=[]):
     """
     row format: stability metric

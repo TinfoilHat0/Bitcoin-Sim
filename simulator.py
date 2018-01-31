@@ -40,8 +40,9 @@ class Simulator:
         for i in range(self.n):
             self.nodes.append(Node(i, self.hashFracs[i], self.environment))
         self.environment.initializeNodes(self.nodes)
+        self.environment.hashFracLog.append(self.hashFracs) 
 
-    def run(self, filename):
+    def run(self, filename=""):
         """ Runs the simulation for r rounds, averaged over avgOver times """
         for i in range(1, self.avgOver+1):
             self.initializeSim()
@@ -51,18 +52,18 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
-            self.saveAvgGainPerRoundData()
-            self.saveFruitPerBlockData()
-            self.saveFTCPerFruitData()
-            self.saveFTCPerBlockData()
+            #self.saveAvgGainPerRoundData()
+            #self.saveFruitPerBlockData()
+            #self.saveFTCPerFruitData()
+            #self.saveFTCPerBlockData()
             #self.saveFairnessData()
             #self.saveStabilityData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
-        self.writeAvgGainPerRoundData(filename)
-        self.writeFruitPerBlockData(filename)
-        self.writeFTCPerFruitData(filename)
-        self.writeFTCPerBlockData(filename)
+        #self.writeAvgGainPerRoundData(filename)
+        #self.writeFruitPerBlockData(filename)
+        #self.writeFTCPerFruitData(filename)
+        #self.writeFTCPerBlockData(filename)
         #self.writeFairnessData(filename)
         #self.writeStabilityData(filename)
         print("Finished!")

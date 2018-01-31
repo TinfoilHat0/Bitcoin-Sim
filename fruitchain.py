@@ -44,13 +44,15 @@ class Environment:
         self.expFTCPerBlock = self.c1*self.coinbaseReward + self.k * (self.expFruitPerBlock*self.expNormalFruitReward*(self.c2-self.c3)  + self.expNormalFruitReward)
 
         # Stability-Fairness-Validation tests related params
-        self.nPassedThreshold = 0
         self.totalRewardBTC = 0
         self.totalRewardFTC = 0
         self.totalBlockMined = 0
         self.totalFruitMined = 0
         self.totalFTCFromFruits = 0
         self.totalFTCFromBlocks = 0
+
+        self.updatePoolInterval = ceil(self.r / 10)
+        self.hashFracLog = []
 
     def initializeNodes(self, nodes):
         '''
@@ -62,8 +64,8 @@ class Environment:
         self.blockLeaderProbs = []
         self.fruitLeaderProbs = []
         for i in range(self.n):
-            self.blockLeaderProbs.append(self.p*nodes[i].hashFrac)
-            self.fruitLeaderProbs.append(self.pF*nodes[i].hashFrac)
+            self.blockLeaderProbs.append(self.p*self.nodes[i].hashFrac)
+            self.fruitLeaderProbs.append(self.pF*self.nodes[i].hashFrac)
             nodes[i].environment = self
         self.blockLeaderProbs.append(1-self.p) # prob. of nobody mines a block in a round
         self.fruitLeaderProbs.append(1-self.pF) # prob. of nobody mines a fruit in a round
@@ -75,7 +77,7 @@ class Environment:
         Nodes attempt to mine a fruit and a block independently,
         they broadcast what they have mined
         '''
-        # 1. Simulate mining process and broadcast what's been mined
+        #  Simulate mining process and broadcast what's been mined
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
         b, f = None, None
@@ -85,6 +87,7 @@ class Environment:
             for node in self.nodes:
                 if node.id != fruitLeaderID:
                     node.deliver(f)
+
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
             # Trigger reward schemes
@@ -96,13 +99,59 @@ class Environment:
                 if node.id != blockLeaderID:
                     node.deliver(b)
 
-        # 2. Log total reward of node that at round
+        # Log total reward of node that at round
         self.logRewardByRound()
-
-        #3. Save statistics
+        # Utility tests
+        if roundNum % self.updatePoolInterval == 0:
+            self.updatePools(roundNum, 20, False)
+        # Save statistics at the end
         if roundNum == self.r:
             self.saveStatistics()
         return b, f
+
+    def updatePools(self, roundNum, x, ftcFlag=True):
+        '''
+        If at roundNum, actual gain of a miner is %x is off from it's expected,
+        he leaves the system. Then we update pools accordingly.
+        '''
+        # 1. find out who leaves
+        leaverHashSum, remHashSum = 0, 0
+        for node in self.nodes:
+            if node.hashFrac > 0:
+                # 1. end and start of our time windo
+                end = roundNum-1
+                start = roundNum - self.updatePoolInterval
+                #print(start, end)
+                # 2. calculate expected reward between these rounds
+                expectedReward = node.expGainPerRound*self.updatePoolInterval
+                # 3. calculate actual reward earned between these rounds
+                if ftcFlag == True:
+                    earnedReward = node.totalRewardByRoundFTC[end] - node.totalRewardByRoundFTC[start]
+                else:
+                    earnedReward = node.totalRewardByRoundBTC[end] - node.totalRewardByRoundBTC[start]
+                # 4. if actual is off from expected by %x, node leaves the system
+                if earnedReward < expectedReward - (expectedReward*x/100):
+                    leaverHashSum += node.hashFrac
+                    node.hashFrac = 0
+                    print(earnedReward, expectedReward)
+                    #print(node.totalRewardByRoundFTC[end], node.totalRewardByRoundFTC[start])
+                    print ("Miner" + str(node.id) + " has left!")
+                remHashSum += node.hashFrac
+        # 2. update hash frac and expected rewards of nodes accordingly, take a snapshot of hash fractions
+        tmp = []
+        for node in self.nodes:
+            if remHashSum > 0:
+                node.hashFrac += leaverHashSum*(node.hashFrac/remHashSum)
+                node.computeExpRewardPerRound()
+            tmp.append(node.hashFrac)
+        self.hashFracLog.append(tmp)
+        # 3. update leader probabilities
+        for i in range(self.n):
+            self.blockLeaderProbs[i] = self.p*self.nodes[i].hashFrac
+            self.fruitLeaderProbs[i] = self.pF*self.nodes[i].hashFrac
+        if remHashSum == 0:
+            self.blockLeaderProbs[self.n] = 1
+            self.fruitLeaderProbs[self.n] = 1
 
     def saveStatistics(self):
         """
@@ -206,13 +255,7 @@ class Node:
         self.prMiningFruit = self.environment.pF * self.hashFrac
         self.expFruitPerBlock = self.environment.expFruitPerBlock * self.hashFrac
 
-        # What an ugly way to write this formula ..
-        self.eWR = self.k*self.hashFrac*( (self.expFruitPerBlock+1)*self.environment.expNormalFruitReward
-        + (self.environment.expFruitPerBlock-self.expFruitPerBlock)*self.environment.expNormalFruitReward*(self.environment.c2-self.environment.c3)) \
-        + self.k*(1-self.hashFrac)*self.expFruitPerBlock*self.environment.expNormalFruitReward*(1-self.environment.c2+self.environment.c3)
-
-        self.expGainPerRoundFTC = self.environment.p*(self.environment.c1*self.environment.coinbaseReward*self.hashFrac + self.eWR)
-        self.expGainPerRoundBTC = self.hashFrac*self.environment.p*self.environment.coinbaseReward
+        self.computeExpRewardPerRound()
 
     def mineFruit(self, roundNum):
         '''
@@ -276,3 +319,7 @@ class Node:
         self.initialCost = nDevices * self.environment.costPerDevice
         consumptionPerRound = self.environment.consumptionPerDevice * nDevices * (self.environment.p / 6) # in KWh
         self.costPerRound = consumptionPerRound * self.environment.costPerKWh
+
+    def computeExpRewardPerRound(self):
+        self.expGainPerRound = self.hashFrac*self.environment.p*self.environment.coinbaseReward
+        # this is same for both as proved in paper

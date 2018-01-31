@@ -208,5 +208,33 @@ class TestEnvironment(unittest.TestCase):
         self.assertEqual(round(nodes[4].totalRewardFTC, 2), 23.76)
         self.assertEqual(nodes[5].totalRewardFTC, 1)
 
+
+    def test_updatePools(self):
+        '''
+        2. node is below expectation, check if hashing rates are adjusted correctly
+        '''
+        env = Environment()
+        env.updatePoolInterval = 1
+        nodes = [Node(0, 0.3, env), Node(1, 0.4, env), Node(2, 0.3, env)]
+        env.initializeNodes(nodes)
+        self.assertEqual(env.blockLeaderProbs, [0.3, 0.4, 0.3, 0])
+
+        nodes[0].totalRewardByRoundFTC = [0, 0]
+        nodes[0].expGainPerRound = 1
+
+        nodes[1].totalRewardByRoundFTC = [5, 10]
+        nodes[1].expGainPerRound = 1
+
+        nodes[2].totalRewardByRoundFTC = [5, 10]
+        nodes[2].expGainPerRound = 1
+
+        env.updatePools(2, 0)
+
+        self.assertEqual(sum(env.blockLeaderProbs), 1)
+        self.assertEqual(env.blockLeaderProbs, [0, 0.5714285714285715, 0.4285714285714286,  0])
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
