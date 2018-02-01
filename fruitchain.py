@@ -51,7 +51,7 @@ class Environment:
         self.totalFTCFromFruits = 0
         self.totalFTCFromBlocks = 0
 
-        self.updatePoolInterval = ceil(self.r / 10)
+        self.updatePoolInterval = ceil(self.r / 5)
         self.hashFracLog = []
 
     def initializeNodes(self, nodes):
@@ -103,7 +103,7 @@ class Environment:
         self.logRewardByRound()
         # Utility tests
         if roundNum % self.updatePoolInterval == 0:
-            self.updatePools(roundNum, 20, False)
+            self.updatePools(roundNum, 15, False)
         # Save statistics at the end
         if roundNum == self.r:
             self.saveStatistics()

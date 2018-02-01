@@ -14,10 +14,12 @@ def plotHashFracsLog(filename, hashFracsLog):
                 tmp.append(hashFrac)
             ctr2 += 1
         labels = ['Miner' + str(id) for id in minerIDs]
+        print(tmp)
         plt.pie(tmp, labels=labels, autopct='%1.1f%%', shadow=True, startangle=140)
         plt.axis('equal')
         plt.savefig(filename + 'hashFracs_' + str(ctr) + '.png')
-    plt.close()
+        plt.close()
+        ctr += 1
 
 
 def plotStabilityMetric(lengths=[], hashSettings=[]):
