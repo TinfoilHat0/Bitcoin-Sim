@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 
 
-def plotStabilityMetric(lengths=[], hashSettings=[]):
+def plotSustainabilityMetric(lengths=[], hashSettings=[]):
     """
     row format: stability metric
     """
@@ -33,7 +33,7 @@ def plotStabilityMetric(lengths=[], hashSettings=[]):
         plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, lengths)
-        plt.xlabel("Window Length(days)")
+        plt.xlabel("Window Length(rounds)")
         plt.ylabel("Stability Metric")
         plt.legend()
         plt.savefig(filename + "stabilityMetricLength.png")
@@ -152,23 +152,23 @@ def plotValidationData(c0Vals):
         measuredAvgGainPerRoundBTC.append( sm/len(log) )
         expectedAvgGainPerRoundBTC.append( log[0][0] )
 
-
-
-
     # Plot AvgGainPerRoundFTC
     plt.figure(figsize=(8,8))
+    pF = 1
     xi = [i for i in range(len(c0Vals))]
+    pVals = [round(pF/c0,2) for c0 in c0Vals]
+    print(pVals)
     # plt.ylim(0, 2 * max(expectedFruitPerBlock))
     plt.plot(xi, measuredAvgGainPerRoundFTC, marker='o', linestyle='--', color='r', label='Measured')
     plt.plot(xi, expectedAvgGainPerRoundFTC, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, c0Vals)
-    plt.xlabel("$c_0$")
-    plt.ylabel("Avg. gain per round (BTC)")
+    plt.xticks(xi, pVals)
+    plt.xlabel("p")
+    plt.ylabel("Avg. reward per round (BTC)")
     plt.legend()
-    plt.savefig(fName + "AvgGainPerRoundFTC.png")
+    plt.savefig(fName + "AvgRewardPerRoundFTC.png")
     plt.close()
 
-    # Plot AvgGainPerRoundFTC
+    # Plot AvgGainPerRoundBTC
     plt.figure(figsize=(8,8))
     xi = [i for i in range(len(c0Vals))]
     # plt.ylim(0, 2 * max(expectedFruitPerBlock))

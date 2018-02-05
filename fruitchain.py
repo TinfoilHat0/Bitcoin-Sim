@@ -207,11 +207,11 @@ class Node:
         self.expFruitPerBlock = self.environment.expFruitPerBlock * self.hashFrac
 
         # What an ugly way to write this formula ..
-        self.eWR = self.k*self.hashFrac*( (self.expFruitPerBlock+1)*self.environment.expNormalFruitReward
-        + (self.environment.expFruitPerBlock-self.expFruitPerBlock)*self.environment.expNormalFruitReward*(self.environment.c2-self.environment.c3)) \
-        + self.k*(1-self.hashFrac)*self.expFruitPerBlock*self.environment.expNormalFruitReward*(1-self.environment.c2+self.environment.c3)
+        #self.eWR = self.k*self.hashFrac*( (self.expFruitPerBlock+1)*self.environment.expNormalFruitReward
+        #+ (self.environment.expFruitPerBlock-self.expFruitPerBlock)*self.environment.expNormalFruitReward*(self.environment.c2-self.environment.c3)) \
+        #+ self.k*(1-self.hashFrac)*self.expFruitPerBlock*self.environment.expNormalFruitReward*(1-self.environment.c2+self.environment.c3)
 
-        self.expGainPerRoundFTC = self.environment.p*(self.environment.c1*self.environment.coinbaseReward*self.hashFrac + self.eWR)
+        self.expGainPerRoundFTC = self.hashFrac*self.environment.p*self.environment.coinbaseReward  #self.environment.p*(self.environment.c1*self.environment.coinbaseReward*self.hashFrac + self.eWR)
         self.expGainPerRoundBTC = self.hashFrac*self.environment.p*self.environment.coinbaseReward
 
     def mineFruit(self, roundNum):

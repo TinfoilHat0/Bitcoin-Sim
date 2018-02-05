@@ -51,22 +51,21 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
-            self.saveAvgGainPerRoundData()
-            self.saveFruitPerBlockData()
-            self.saveFTCPerFruitData()
-            self.saveFTCPerBlockData()
-            #self.saveFairnessData()
-            #self.saveStabilityData()
+            #self.saveAvgGainPerRoundData()
+            #self.saveFruitPerBlockData()
+            #self.saveFTCPerFruitData()
+            #self.saveFTCPerBlockData()
+            self.saveFairnessData()
+            self.saveStabilityData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
-        self.writeAvgGainPerRoundData(filename)
-        self.writeFruitPerBlockData(filename)
-        self.writeFTCPerFruitData(filename)
-        self.writeFTCPerBlockData(filename)
-        #self.writeFairnessData(filename)
-        #self.writeStabilityData(filename)
+        #self.writeAvgGainPerRoundData(filename)
+        #self.writeFruitPerBlockData(filename)
+        #self.writeFTCPerFruitData(filename)
+        #self.writeFTCPerBlockData(filename)
+        self.writeFairnessData(filename)
+        self.writeStabilityData(filename)
         print("Finished!")
-
 
     def saveAvgGainPerRoundData(self):
         # Avg. gain of a randomly chosen node
@@ -106,6 +105,36 @@ class Simulator:
             file.write(','.join(map(str, log)) + "\n")
         file.close()
 
+    def saveStabilityData(self):
+        distancesBTC, distancesFTC = [], []
+        for node in self.nodes:
+            idealRewardPerRoundBTC = node.totalRewardBTC / self.r
+            idealRewardPerRoundFTC = node.totalRewardFTC / self.r
+            sumDistanceBTC, sumDistanceFTC = 0, 0
+            for j in range(self.r):
+                idealRewardBTC = idealRewardPerRoundBTC*(j+1)
+                idealRewardFTC = idealRewardPerRoundFTC*(j+1)
+                sumDistanceBTC += abs(node.totalRewardByRoundBTC[j] - idealRewardBTC)*100 / idealRewardBTC
+                sumDistanceFTC += abs(node.totalRewardByRoundFTC[j] - idealRewardFTC)*100 / idealRewardFTC
+            sumDistanceBTC /= self.r
+            sumDistanceFTC /= self.r
+            distancesBTC.append(sumDistanceBTC)
+            distancesFTC.append(sumDistanceFTC)
+        self.stabilityLogBTC.append(distancesBTC)
+        self.stabilityLogFTC.append(distancesFTC)
+
+
+    def saveFairnessData(self):
+        distancesBTC, distancesFTC = [], []
+        for node in self.nodes:
+            fairRewardBTC = self.environment.totalRewardBTC * node.hashFrac
+            fairRewardFTC = self.environment.totalRewardFTC * node.hashFrac
+            distancesBTC.append( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
+            distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
+        self.fairnessLogBTC.append(distancesBTC)
+        self.fairnessLogFTC.append(distancesFTC)
+
+
     def writeFruitPerBlockData(self, filename):
         file = open(filename + "FruitPerBlock", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
@@ -133,24 +162,6 @@ class Simulator:
             file.write(','.join(map(str, log)) + "\n")
         file.close()
 
-    def saveStabilityData(self):
-        distancesBTC, distancesFTC = [], []
-        for node in self.nodes:
-            idealRewardPerRoundBTC = node.totalRewardBTC / self.r
-            idealRewardPerRoundFTC = node.totalRewardFTC / self.r
-            sumDistanceBTC, sumDistanceFTC = 0, 0
-            for j in range(self.r):
-                idealRewardBTC = idealRewardPerRoundBTC*(j+1)
-                idealRewardFTC = idealRewardPerRoundFTC*(j+1)
-                sumDistanceBTC += abs(node.totalRewardByRoundBTC[j] - idealRewardBTC)*100 / idealRewardBTC
-                sumDistanceFTC += abs(node.totalRewardByRoundFTC[j] - idealRewardFTC)*100 / idealRewardFTC
-            sumDistanceBTC /= self.r
-            sumDistanceFTC /= self.r
-            distancesBTC.append(sumDistanceBTC)
-            distancesFTC.append(sumDistanceFTC)
-        self.stabilityLogBTC.append(distancesBTC)
-        self.stabilityLogFTC.append(distancesFTC)
-
     def writeStabilityData(self, filename):
         # 1. BTC data
         file = open(filename + "StabilityMetricBTC", 'w')
@@ -171,17 +182,6 @@ class Simulator:
         for log in self.stabilityLogFTC:
             file.write( str(np.mean(log)) + "\n")
         file.close()
-
-
-    def saveFairnessData(self):
-        distancesBTC, distancesFTC = [], []
-        for node in self.nodes:
-            fairRewardBTC = self.environment.totalRewardBTC * node.hashFrac
-            fairRewardFTC = self.environment.totalRewardFTC * node.hashFrac
-            distancesBTC.append( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
-            distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
-        self.fairnessLogBTC.append(distancesBTC)
-        self.fairnessLogFTC.append(distancesFTC)
 
     def writeFairnessData(self, filename):
         # 1. BTC data
