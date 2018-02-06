@@ -33,10 +33,10 @@ def plotSustainabilityMetric(lengths=[], hashSettings=[]):
         plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, lengths)
-        plt.xlabel("Window Length(rounds)")
-        plt.ylabel("Stability Metric")
+        plt.xlabel("Window Length (rounds)")
+        plt.ylabel("Sustanainability Metric")
         plt.legend()
-        plt.savefig(filename + "stabilityMetricLength.png")
+        plt.savefig(filename + "SustanainabilityMetricLength.png")
         plt.close()
     # 2. Plot hash fraction setting tests
     if len(hashSettings) > 0:
@@ -46,10 +46,10 @@ def plotSustainabilityMetric(lengths=[], hashSettings=[]):
         plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, xi)
-        plt.xlabel("Hash Rate Setting ID")
-        plt.ylabel("Stability Metric")
+        plt.xlabel("Std.Dev of Hash Rate Distribution")
+        plt.ylabel("Sustanainability Metric")
         plt.legend()
-        plt.savefig(filename + "stabilityMetricHashSetting.png")
+        plt.savefig(filename + "SustanainabilityMetricHashSetting.png")
         plt.close()
 
 def plotFairnessMetric(lengths=[], hashSettings=[]):
