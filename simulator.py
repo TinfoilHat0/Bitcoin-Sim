@@ -4,7 +4,7 @@ from random import randint
 import math as mt
 
 class Simulator:
-    def __init__(self, n, r, p, pF, hashFracs, k=16, avgOver=1):
+    def __init__(self, n, r, p, pF, hashFracs, k=16, avgOver=1, blockRewardSetting=(12.5, 12.5) ):
         '''
         n: number of nodes
         r: number of rounds
@@ -21,6 +21,7 @@ class Simulator:
         self.k = k
         self.r = r
         self.avgOver = avgOver
+        self.blockRewardSetting = blockRewardSetting
 
         self.fairnessLogFTC = []
         self.fairnessLogBTC = []
@@ -35,7 +36,7 @@ class Simulator:
         self.avgGainPerRoundBTCLog = []
 
     def initializeSim(self):
-        self.environment = Environment(self.p, self.pF, self.k, self.r)
+        self.environment = Environment(self.p, self.pF, self.k, self.r, self.blockRewardSetting)
         self.nodes = []
         for i in range(self.n):
             self.nodes.append(Node(i, self.hashFracs[i], self.environment))
@@ -123,7 +124,6 @@ class Simulator:
         self.stabilityLogBTC.append(distancesBTC)
         self.stabilityLogFTC.append(distancesFTC)
 
-
     def saveFairnessData(self):
         distancesBTC, distancesFTC = [], []
         for node in self.nodes:
@@ -133,7 +133,6 @@ class Simulator:
             distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
         self.fairnessLogBTC.append(distancesBTC)
         self.fairnessLogFTC.append(distancesFTC)
-
 
     def writeFruitPerBlockData(self, filename):
         file = open(filename + "FruitPerBlock", 'w')

@@ -7,7 +7,7 @@ import numpy as np
 import bisect
 
 class Environment:
-    def __init__(self, p = 1, pF = 1, k = 16, r=100):
+    def __init__(self, p = 1, pF = 1, k = 16, r=100, blockRewardSetting=(12.5, 12.5)):
         '''
         p: pr. of mining a block in a rounds
         pF: pr. of mining a fruit in a round
@@ -21,12 +21,16 @@ class Environment:
         self.k = k
         self.r = r
         self.nodes = []
+        self.blockRewardSetting = blockRewardSetting
+        #print('hey')
+        #print(blockRewardSetting)
 
         # Fruitchain related params.
         self.c1 = 1/100
         self.c2 = 1/10
         self.c3 = 1/100
         self.nFruitsInWindow = 0
+
 
         # Hard-coded constants taken from real world data of Bitcoin
         self.coinbaseReward = 12.5
@@ -95,10 +99,8 @@ class Environment:
             for node in self.nodes:
                 if node.id != blockLeaderID:
                     node.deliver(b)
-
         # 2. Log total reward of node that at round
         self.logRewardByRound()
-
         #3. Save statistics
         if roundNum == self.r:
             self.saveStatistics()
@@ -235,6 +237,8 @@ class Node:
         freshFruits = self.getFreshFruits()
         # 2. Append the block, update fields of included fruits
         block = Block(self.id, roundNum, freshFruits, [])
+        #print(self.environment.blockRewardSetting)
+        block.totalFee = random.uniform(self.environment.blockRewardSetting[0], self.environment.blockRewardSetting[1])
         self.blockChain.append(block)
         for f in freshFruits:
             f.includeRound = roundNum
