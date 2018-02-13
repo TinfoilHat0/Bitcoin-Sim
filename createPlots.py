@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 
 
-def plotRewardGapMetric(lengths=[], hashSettings=[], blockSettings=[]):
+def plotSustainabilityMetric(lengths=[], hashSettings=[], blockSettings=[]):
     """
     row format: reward gap metric
     """
@@ -12,26 +12,26 @@ def plotRewardGapMetric(lengths=[], hashSettings=[], blockSettings=[]):
     fName = filename + "lengthTests/"
     metricLengthBTC, metricLengthFTC = [], []
     for length in lengths:
-        btcLog = np.loadtxt(fName + "length_" + str(length) + "_" + "RewardGapBTC", delimiter=",")
-        ftcLog = np.loadtxt(fName + "length_" + str(length) + "_" + "RewardGapFTC", delimiter=",")
+        btcLog = np.loadtxt(fName + "length_" + str(length) + "_" + "SustainabilityMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "length_" + str(length) + "_" + "SustainabilityMetricFTC", delimiter=",")
         metricLengthBTC.append( sum(btcLog) / len(btcLog) )
         metricLengthFTC.append( sum(ftcLog) / len(ftcLog) )
     # 2. hashSettings tests
     fName = filename + "hashTests/"
     metricHashBTC, metricHashFTC = [], []
     for i in range(len(hashSettings)):
-        btcLog = np.loadtxt(fName + "hashSetting_" + str(i+1) + "_" + "RewardGapBTC", delimiter=",")
-        ftcLog = np.loadtxt(fName + "hashSetting_" + str(i+1) + "_" + "RewardGapFTC", delimiter=",")
+        btcLog = np.loadtxt(fName + "hashSetting_" + str(i+1) + "_" + "SustainabilityMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "hashSetting_" + str(i+1) + "_" + "SustainabilityMetricFTC", delimiter=",")
         metricHashBTC.append( sum(btcLog) / len(btcLog) )
         metricHashFTC.append( sum(ftcLog) / len(ftcLog) )
     # 3. blockSettings tests
     fName = filename + "blockTests/"
-    metricHashBTC, metricHashFTC = [], []
+    metricBlockBTC, metricBlockFTC = [], []
     for i in range(len(blockSettings)):
-        btcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "RewardGapBTC", delimiter=",")
-        ftcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "RewardGapFTC", delimiter=",")
-        metricHashBTC.append( sum(btcLog) / len(btcLog) )
-        metricHashFTC.append( sum(ftcLog) / len(ftcLog) )
+        btcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "SustainabilityMetricBTC", delimiter=",")
+        ftcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "SustainabilityMetricFTC", delimiter=",")
+        metricBlockBTC.append( sum(btcLog) / len(btcLog) )
+        metricBlockFTC.append( sum(ftcLog) / len(ftcLog) )
 
     # 1. Plot length tests
     if len(lengths) > 0:
@@ -41,38 +41,38 @@ def plotRewardGapMetric(lengths=[], hashSettings=[], blockSettings=[]):
         plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, lengths)
-        plt.xlabel("Window Length (rounds)")
-        plt.ylabel("Avg. Reward Gap (rounds)")
+        plt.xlabel("Number of Rounds")
+        plt.ylabel("Sustainability Metric")
         plt.legend()
-        plt.savefig(filename + "RewardGapLength.png")
+        plt.savefig(filename + "SustainabilityLength.png")
         plt.close()
     # 2. Plot hash fraction setting tests
     if len(hashSettings) > 0:
         plt.figure(figsize=(8,8))
-        xi = [i for i in range(len(hashSettings))]
-        devs = [math.sqrt(np.var(setting)) for setting in hashSettings]
+        xi = [i+1 for i in range(len(hashSettings))]
+        #devs = [round(math.sqrt(np.var(setting)), 2) for setting in hashSettings]
         #plt.ylim(0, 2 * max(metricHashBTC))
         plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
-        plt.xticks(xi, devs)
-        plt.xlabel("Std.Dev of Hash Rate Distribution")
-        plt.ylabel("Avg. Reward Gap (rounds)")
+        plt.xticks(xi, xi)
+        plt.xlabel("Hash Setting ID")
+        plt.ylabel("Sustainability Metric")
         plt.legend()
-        plt.savefig(filename + "RewardGapHashSetting.png")
+        plt.savefig(filename + "SustainabilityHashSetting.png")
         plt.close()
     # 3. Plot block reward settings tests
     if len(blockSettings) > 0:
         plt.figure(figsize=(8,8))
-        xi = [i for i in range(len(blockSettings))]
-        devs = [math.sqrt(np.var(setting)) for setting in blockSettings]
+        xi = [i+1 for i in range(len(blockSettings))]
+        #devs = [math.sqrt(np.var(setting)) for setting in blockSettings]
         #plt.ylim(0, 2 * max(metricHashBTC))
-        plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
-        plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
-        plt.xticks(xi, devs)
-        plt.xlabel("Std.Dev of Block Reward Distribution")
-        plt.ylabel("Avg. Reward Gap (rounds)")
+        plt.plot(xi, metricBlockBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+        plt.plot(xi, metricBlockFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+        plt.xticks(xi, xi)
+        plt.xlabel("Block Reward Setting ID")
+        plt.ylabel("Sustainability Metric")
         plt.legend()
-        plt.savefig(filename + "RewardGapBlockSetting.png")
+        plt.savefig(filename + "SustainabilityBlockSetting.png")
         plt.close()
 
 def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
@@ -98,12 +98,12 @@ def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
         metricHashFTC.append(sum(ftcLog) / len(ftcLog))
     # 3. blockSettings tests
     fName = filename + "blockTests/"
-    metricHashBTC, metricHashFTC = [], []
+    metricBlockBTC, metricBlockFTC = [], []
     for i in range(len(blockSettings)):
         btcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "FairnessMetricBTC", delimiter=",")
         ftcLog = np.loadtxt(fName + "blockSetting_" + str(i+1) + "_" + "FairnessMetricFTC", delimiter=",")
-        metricHashBTC.append(sum(btcLog) / len(btcLog))
-        metricHashFTC.append(sum(ftcLog) / len(ftcLog))
+        metricBlockBTC.append(sum(btcLog) / len(btcLog))
+        metricBlockFTC.append(sum(ftcLog) / len(ftcLog))
 
     # 1. Plot length tests
     if len(lengths) > 0:
@@ -114,38 +114,38 @@ def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
         plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, lengths)
-        plt.xlabel("Window Length(rounds)")
-        plt.ylabel("Fairness Metric")
+        plt.xlabel("Number of Rounds")
+        plt.ylabel("Unfairness Metric")
         plt.legend()
-        plt.savefig(filename + "FairnessMetricLength.png")
+        plt.savefig(filename + "UnfairnessLength.png")
         plt.close()
     # 2. Plot hash fraction setting tests
     if len(hashSettings) > 0:
         plt.figure(figsize=(8,8))
-        xi = [i for i in range(len(hashSettings))]
-        devs = [round(math.sqrt(np.var(setting)), 2) for setting in hashSettings]
+        xi = [i+1 for i in range(len(hashSettings))]
+        #devs = [round(math.sqrt(np.var(setting)), 2) for setting in hashSettings]
         #plt.ylim(0, 2 * max(metricHashBTC))
         plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, xi)
-        plt.xlabel("Std.Dev of Hash Rate Distribution")
-        plt.ylabel("Fairness Metric")
+        plt.xlabel("Hash Setting ID")
+        plt.ylabel("Unfairness Metric")
         plt.legend()
-        plt.savefig(filename + "FairnessMetricHashSetting.png")
+        plt.savefig(filename + "UnfairnessHashSetting.png")
         plt.close()
     # 3. Plot block reward settings tests
     if len(blockSettings) > 0:
         plt.figure(figsize=(8,8))
-        xi = [i for i in range(len(blockSettings))]
-        devs = [round(math.sqrt(np.var(setting)), 2) for setting in blockSettings]
+        xi = [i+1 for i in range(len(blockSettings))]
+        #devs = [round(math.sqrt(np.var(setting)), 2) for setting in blockSettings]
         #plt.ylim(0, 2 * max(metricHashBTC))
-        plt.plot(xi, metricHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
-        plt.plot(xi, metricHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
-        plt.xticks(xi, devs)
-        plt.xlabel("Std.Dev of Block Reward Distribution")
-        plt.ylabel("Fairness Metric")
+        plt.plot(xi, metricBlockBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+        plt.plot(xi, metricBlockFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+        plt.xticks(xi, xi)
+        plt.xlabel("Block Reward Setting ID")
+        plt.ylabel("Unfairness Metric")
         plt.legend()
-        plt.savefig(filename + "FairnessMetricBlockSetting.png")
+        plt.savefig(filename + "UnfairnessBlockSetting.png")
         plt.close()
 
 

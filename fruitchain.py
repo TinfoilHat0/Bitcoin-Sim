@@ -108,6 +108,7 @@ class Environment:
         """
         Save some statistics at the end of simulation
         """
+        # Compute statistics and sustainability metric for individial nodes
         for node in self.nodes:
             self.totalRewardBTC += node.totalRewardBTC
             self.totalRewardFTC += node.totalRewardFTC
@@ -124,6 +125,14 @@ class Environment:
                 node.avgRewardGapFTC = self.environment.r
             else:
                 node.avgRewardGapFTC = sum( np.diff(list(node.rewardRoundFTC)) ) / len( np.diff(list(node.rewardRoundFTC)) )
+            node.sustainabilityBTC = node.totalRewardBTC / node.avgRewardGapBTC
+            node.sustainabilityFTC = node.totalRewardFTC / node.avgRewardGapFTC
+        # After computing the total reward, compute fairness metric
+        for node in self.nodes:
+            fairRewardBTC = self.totalRewardBTC * node.hashFrac
+            fairRewardFTC = self.totalRewardFTC * node.hashFrac
+            node.fairnessBTC = ( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
+            node.fairnessFTC = ( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
 
     def logRewardByRound(self):
         """
@@ -218,6 +227,11 @@ class Node:
         self.rewardRoundFTC = set({0})
         self.avgRewardGapBTC = -1
         self.avgRewardGapFTC = -1
+        # Metrics
+        self.sustainabilityBTC = -1
+        self.sustainabilityFTC = -1
+        self.fairnessBTC = -1
+        self.fairnessFTC = -1
 
         self.prMiningBlock =  self.environment.p * self.hashFrac
         self.prMiningFruit = self.environment.pF * self.hashFrac

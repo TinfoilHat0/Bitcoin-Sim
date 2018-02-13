@@ -25,9 +25,8 @@ class Simulator:
 
         self.fairnessLogFTC = []
         self.fairnessLogBTC = []
-
-        self.rewardGapLogBTC = []
-        self.rewardGapLogFTC = []
+        self.sustainabilityLogBTC = []
+        self.sustainabilityLogFTC = []
 
         self.fruitPerBlockLog = []
         self.FTCPerFruitLog = []
@@ -57,7 +56,7 @@ class Simulator:
             #self.saveFTCPerFruitData()
             #self.saveFTCPerBlockData()
             self.saveFairnessData()
-            self.saveRewardGapData()
+            self.saveSustainabilityData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
         #self.writeAvgGainPerRoundData(filename)
@@ -65,7 +64,7 @@ class Simulator:
         #self.writeFTCPerFruitData(filename)
         #self.writeFTCPerBlockData(filename)
         self.writeFairnessData(filename)
-        self.writeRewardGapData(filename)
+        self.writeSustainabilityData(filename)
         print("Finished!")
 
     def saveAvgGainPerRoundData(self):
@@ -88,43 +87,67 @@ class Simulator:
         FTCPerBlock = self.environment.totalFTCFromBlocks / self.environment.totalBlockMined
         self.FTCPerBlockLog.append( (FTCPerBlock , self.environment.expFTCPerBlock) )
 
-    # Redundant coding.. redundant coding everywhere
-    def writeAvgGainPerRoundData(self, filename):
-        file = open(filename + "AvgGainPerRoundBTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-
-        for log in self.avgGainPerRoundBTCLog:
-            file.write(','.join(map(str, log)) + "\n")
-        file.close()
-
-        file = open(filename + "AvgGainPerRoundFTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-
-        for log in self.avgGainPerRoundFTCLog:
-            file.write(','.join(map(str, log)) + "\n")
-        file.close()
-
-    def saveRewardGapData(self):
-        avgGapBTC, avgGapFTC = 0, 0
+    def saveSustainabilityData(self):
+        sustBTC, sustFTC = 0, 0
         for node in self.nodes:
-            avgGapBTC += node.avgRewardGapBTC
-            avgGapFTC += node.avgRewardGapFTC
-        avgGapBTC /= self.n
-        avgGapFTC /= self.n
-        self.rewardGapLogBTC.append(avgGapBTC)
-        self.rewardGapLogFTC.append(avgGapFTC)
+            sustBTC += node.sustainabilityBTC
+            sustFTC += node.sustainabilityFTC
+        sustBTC /= self.n
+        sustFTC /= self.n
+        self.sustainabilityLogBTC.append(sustBTC)
+        self.sustainabilityLogFTC.append(sustFTC)
 
     def saveFairnessData(self):
-        distancesBTC, distancesFTC = [], []
+        fairBTC, fairFTC = 0, 0
         for node in self.nodes:
-            fairRewardBTC = self.environment.totalRewardBTC * node.hashFrac
-            fairRewardFTC = self.environment.totalRewardFTC * node.hashFrac
-            distancesBTC.append( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
-            distancesFTC.append( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
-        self.fairnessLogBTC.append(distancesBTC)
-        self.fairnessLogFTC.append(distancesFTC)
+            fairBTC += node.fairnessBTC
+            fairFTC += node.fairnessFTC
+        fairBTC /= self.n
+        fairFTC /= self.n
+        self.fairnessLogBTC.append(fairBTC)
+        self.fairnessLogFTC.append(fairFTC)
+
+    def writeSustainabilityData(self, filename):
+        # 1. BTC data
+        file = open(filename + "SustainabilityMetricBTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Sustainability of system \n" )
+
+        for log in self.sustainabilityLogBTC:
+            file.write( str(np.mean(log)) + "\n")
+        file.close()
+
+        # 2.FTC data
+        file = open(filename + "SustainabilityMetricFTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Sustainability of system \n" )
+
+        for log in self.sustainabilityLogFTC:
+            file.write( str(np.mean(log)) + "\n")
+        file.close()
+
+    def writeFairnessData(self, filename):
+        # 1. BTC data
+        file = open(filename + "FairnessMetricBTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("# Fairness metric of system\n" )
+
+        for log in self.fairnessLogBTC:
+            file.write( str(np.mean(log)) + "\n")
+        file.close()
+
+        # 2.FTC data
+        file = open(filename + "FairnessMetricFTC", 'w')
+        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
+        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
+        file.write("#  Fairness metric of system \n" )
+
+        for log in self.fairnessLogFTC:
+            file.write( str(np.mean(log)) + "\n")
+        file.close()
 
     def writeFruitPerBlockData(self, filename):
         file = open(filename + "FruitPerBlock", 'w')
@@ -153,44 +176,20 @@ class Simulator:
             file.write(','.join(map(str, log)) + "\n")
         file.close()
 
-    def writeRewardGapData(self, filename):
-        # 1. BTC data
-        file = open(filename + "RewardGapBTC", 'w')
+    # Redundant coding.. redundant coding everywhere
+    def writeAvgGainPerRoundData(self, filename):
+        file = open(filename + "AvgGainPerRoundBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Reward Gap of system \n" )
 
-        for log in self.rewardGapLogBTC:
-            file.write( str(np.mean(log)) + "\n")
+        for log in self.avgGainPerRoundBTCLog:
+            file.write(','.join(map(str, log)) + "\n")
         file.close()
 
-        # 2.FTC data
-        file = open(filename + "RewardGapFTC", 'w')
+        file = open(filename + "AvgGainPerRoundFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
         " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Reward Gap of system \n" )
 
-        for log in self.rewardGapLogFTC:
-            file.write( str(np.mean(log)) + "\n")
-        file.close()
-
-    def writeFairnessData(self, filename):
-        # 1. BTC data
-        file = open(filename + "FairnessMetricBTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("# Fairness metric of system\n" )
-
-        for log in self.fairnessLogBTC:
-            file.write( str(np.mean(log)) + "\n")
-        file.close()
-
-        # 2.FTC data
-        file = open(filename + "FairnessMetricFTC", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + " k: " + str(self.k) +
-        " c1:" + str(self.environment.c1) + " c2:" + str(self.environment.c2) + " c3:" + str(self.environment.c3) + "\n")
-        file.write("#  Fairness metric of system \n" )
-
-        for log in self.fairnessLogFTC:
-            file.write( str(np.mean(log)) + "\n")
+        for log in self.avgGainPerRoundFTCLog:
+            file.write(','.join(map(str, log)) + "\n")
         file.close()
