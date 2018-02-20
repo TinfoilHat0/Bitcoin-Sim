@@ -1,21 +1,4 @@
 import random
-#coding: utf-8
-class Transaction:
-    def __init__(self, bcastRound, fee, size=1):
-        self.bcastRound = bcastRound
-        self.fee = fee
-        self.size = size # in bytes
-        self.includeRound = 0 # updated by the miner
-
-    def __eq__(self, other):
-        return self.fee / self.size == other.fee / other.size
-
-    def __lt__(self, other):
-        return self.fee / self.size < other.fee / other.size
-
-    def __repr__(self):
-        return str(self.fee / self.size)
-
 
 class Fruit:
     def __init__(self, minerID=-1, mineRound=0, hangBlockHeight=0):
@@ -24,9 +7,10 @@ class Fruit:
         pos: -index- of the block in blockchain which this fruit hangs from
         '''
         self.minerID = minerID
-        self.hangBlockHeight = hangBlockHeight # height of the block that this fruit hangs from
         self.mineRound = mineRound
-        self.includeRound = 0
+        self.hangBlockHeight = hangBlockHeight
+
+        self.includeRound = 0 # round in which fruit is included in a block, consequently in the blockchain
         self.contBlockHeight = 0 # height of the block that contains the fruit
 
     def __hash__(self):
@@ -40,18 +24,15 @@ class Fruit:
     def __repr__(self):
         return str(self.minerID) + '|' + str(self.mineRound) + '|' + str(0)
 
-
 class Block:
-    def __init__(self, minerID=-1, mineRound=0, fruits=set(), txs=[]):
+    def __init__(self, minerID=-1, mineRound=0, fruits=[]):
         self.minerID = minerID
         self.mineRound = mineRound
-        self.fruits = fruits
-        self.txs = txs
-        self.totalFee = 12.5 # reward of block
-        self.height = -1 # height in blockchain
 
+        self.reward = 12.5 #total reward a block brings
+        self.height = 0 # height in blockchain
+        self.fruits = fruits
         self.nFruits = len(fruits)
-        self.size = 10 # in bytes
 
     def __hash__(self):
         # minerID||mineRound||1 uniquely determines a block where || denotes concatanetion
@@ -64,13 +45,11 @@ class Block:
     def __repr__(self):
         return str(self.minerID) + '|' + str(self.mineRound) + '|' + str(1)
 
-
 class Blockchain:
     def __init__(self, k=16):
-        self.chain = [] # just a list, not a tree, can be changed later if we broadcast blocks
+        self.chain = []
         self.length = 0
-        self.append(Block()) # TODO: length of genesis is k=16 to bootstrap fruitchain scheme
-
+        
     def append(self, b):
         self.chain.append(b)
         self.length += 1
