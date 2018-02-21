@@ -1,3 +1,5 @@
+# This is obsolate as of 21. Feb,2018
+
 #coding: utf-8
 import unittest
 from fruitchain import *
@@ -22,13 +24,6 @@ class TestDataStructures(unittest.TestCase):
 
         for b in chain:
             self.assertEqual(b, block)
-
-    def test_Transaction(self):
-        t = Transaction(1, 10, 5)
-        t2 = Transaction(1, 20, 10)
-        self.assertEqual(t, t2)
-        t2.size = 20
-        self.assertNotEqual(t, t2)
 
 class TestNode(unittest.TestCase):
 
@@ -91,26 +86,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(f.contBlockHeight, 2)
         self.assertEqual(f.includeRound, 3)
 
-    def test_calculateCostPerRound(self):
-        node = Node(1)
-        env = Environment()
-        # Hard-coded constants taken from real world data of Bitcoin
-        env.coinbaseReward = 12.5
-        env.networkHashRate = 16 * (10**5) # Th/s
-        env.usdToBTC = 9 * (10**-5) # 1 USD = 0.00009 BTC
-        env.costPerKWh = 18 * (10**-6) # In France, cost per KWh = 0.2 USD = 0.000018 BTC
-        env.deviceHashRate = 14 # TH/s, AntMiner S9
-        env.costPerDevice = 0.23 # BTC
-        env.consumptionPerDevice = 1.372 # KWh
-
-        node.environment = env
-        node.calculateCost()
-
-        self.assertEqual(node.initialCost, 26285.780000000002)
-        self.assertEqual(node.costPerRound, 0.47040117600000003)
-
-
-
 class TestEnvironment(unittest.TestCase):
 
     def test_initializeNodes(self):
@@ -147,7 +122,7 @@ class TestEnvironment(unittest.TestCase):
     def test_rewardFruitchain(self):
         '''
         Test algorithm in the following chain:
-        genesis <- b1 <- b2 <-b3
+         b1 <- b2 <-b3
 
         b1 has a single fruit. Hangs from genesis.
         b2 has a 2 fruits. They both hang from genesis.

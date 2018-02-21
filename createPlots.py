@@ -2,10 +2,135 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+# Figure details
+SMALL_SIZE = 8
+MEDIUM_SIZE = 10
+BIGGER_SIZE = 12
+plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=BIGGER_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-def plotSustainabilityMetric(lengths=[], hashSettings=[], blockSettings=[]):
+def plotPoolExperiment(poolLog):
+    nNodesBTC, nNodesFTC = [], []
+    nHashBTC, nHashFTC = [], []
+
+    for log in poolLog:
+        hashBTC, hashFTC = 0, 0
+        for node in log[0]:
+            hashBTC += node.hashFrac
+        for node in log[1]:
+            hashFTC += node.hashFrac
+        nHashBTC.append(hashBTC )
+        nHashFTC.append(hashFTC)
+        nNodesBTC.append(len(log[0]))
+        nNodesFTC.append(len(log[1]))
+
+    #  number of nodes in pools
+    plt.figure(figsize=(8,8))
+    xi = [i+1 for i in range(len(poolLog))]
+    plt.plot(xi, nNodesBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, nNodesFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.xticks(xi, xi)
+    plt.xlabel("Snapshots")
+    plt.ylabel("Number of nodes")
+    plt.legend()
+    plt.savefig("sim_results/poolTests/PoolNumberOfNodes.png")
+    plt.close()
+
+    #  hash fraction in pools
+    plt.figure(figsize=(8,8))
+    xi = [i+1 for i in range(len(poolLog))]
+    plt.plot(xi, nHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, nHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.xticks(xi, xi)
+    plt.xlabel("Snapshots")
+    plt.ylabel("Total hash rate fraction")
+    plt.legend()
+    plt.savefig("sim_results/poolTests/PoolHashRate.png")
+    plt.close()
+
+def plotValidationData(c0Vals):
     """
-    row format: reward gap metric
+    Inputs are required params. to calculate theoretical fit
+    row format: fairnessMetric
+    """
+    fName = "sim_results/validationTests/"
+    # 1. Collect data
+    measuredFruitPerBlock, expectedFruitPerBlock = [], []
+    measuredFTCPerFruit, expectedFTCPerFruit = [], []
+    measuredFTCPerBlock, expectedFTCPerBlock = [], []
+    measuredAvgGainPerRoundFTC, expectedAvgGainPerRoundFTC = [], []
+    measuredAvgGainPerRoundBTC, expectedAvgGainPerRoundBTC = [], []
+    for c0 in c0Vals:
+        # 1. FruitPerBlock
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "FruitPerBlock", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFruitPerBlock.append( sm/len(log) )
+        expectedFruitPerBlock.append( log[0][0] )
+        # 2. RewardPerFruit
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerFruit", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFTCPerFruit.append( sm/len(log) )
+        expectedFTCPerFruit.append( log[0][0] )
+        # 3. RewardPerBlock
+        sm, expected = 0, 0
+        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerBlock", delimiter=",")
+        for data in log:
+            sm += data[0]
+        measuredFTCPerBlock.append( sm/len(log) )
+        expectedFTCPerBlock.append( log[0][0] )
+
+    #  Plot FruitPerBlock
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFruitPerBlock, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFruitPerBlock, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
+    plt.ylabel("Avg. number of fruits per block")
+    plt.legend()
+    plt.savefig(fName + "FruitPerBlock.png")
+    plt.close()
+
+    # Plot RewardPerFruit
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFTCPerFruit, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFTCPerFruit, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
+    plt.ylabel("Reward per fruit (BTC)")
+    plt.legend()
+    plt.savefig(fName + "RewardPerFruit.png")
+    plt.close()
+
+    #  Plot RewardPerFruit
+    plt.figure(figsize=(8,8))
+    xi = [i for i in range(len(c0Vals))]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, measuredFTCPerBlock, marker='o', linestyle='--', color='r', label='Measured')
+    plt.plot(xi, expectedFTCPerBlock, marker='o', linestyle='--', color='b', label='Expected')
+    plt.xticks(xi, c0Vals)
+    plt.xlabel("$c_0$")
+    plt.ylabel("Reward per block (BTC)")
+    plt.legend()
+    plt.savefig(fName + "RewardPerBlock.png")
+    plt.close()
+
+
+def plotSustainabilityMetric():
+    """
+    row format: sustainability metric
     """
     filename = "sim_results/metricTests/"
     # 1. length tests
@@ -147,121 +272,3 @@ def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
         plt.legend()
         plt.savefig(filename + "UnfairnessBlockSetting.png")
         plt.close()
-
-
-def plotValidationData(c0Vals):
-    """
-    Inputs are required params. to calculate theoretical fit
-    row format: fairnessMetric
-    """
-    fName = "sim_results/validationTests/"
-    # 1. Collect data
-    measuredFruitPerBlock, expectedFruitPerBlock = [], []
-    measuredFTCPerFruit, expectedFTCPerFruit = [], []
-    measuredFTCPerBlock, expectedFTCPerBlock = [], []
-    measuredAvgGainPerRoundFTC, expectedAvgGainPerRoundFTC = [], []
-    measuredAvgGainPerRoundBTC, expectedAvgGainPerRoundBTC = [], []
-    for c0 in c0Vals:
-        # 1. FruitPerBlock
-        sm, expected = 0, 0
-        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "FruitPerBlock", delimiter=",")
-        for data in log:
-            sm += data[0]
-        measuredFruitPerBlock.append( sm/len(log) )
-        expectedFruitPerBlock.append( log[0][0] )
-        # 2. RewardPerFruit
-        sm, expected = 0, 0
-        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerFruit", delimiter=",")
-        for data in log:
-            sm += data[0]
-        measuredFTCPerFruit.append( sm/len(log) )
-        expectedFTCPerFruit.append( log[0][0] )
-        # 3. RewardPerBlock
-        sm, expected = 0, 0
-        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "RewardPerBlock", delimiter=",")
-        for data in log:
-            sm += data[0]
-        measuredFTCPerBlock.append( sm/len(log) )
-        expectedFTCPerBlock.append( log[0][0] )
-        # 4. avg reward per round FTC
-        sm, expected = 0, 0
-        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "AvgGainPerRoundFTC", delimiter=",")
-        for data in log:
-            sm += data[0]
-        measuredAvgGainPerRoundFTC.append( sm/len(log) )
-        expectedAvgGainPerRoundFTC.append( log[0][0] )
-        # 5. avg reward per round BTC
-        sm, expected = 0, 0
-        log = np.loadtxt(fName + "c0_" + str(c0) + "_" + "AvgGainPerRoundBTC", delimiter=",")
-        for data in log:
-            sm += data[0]
-        measuredAvgGainPerRoundBTC.append( sm/len(log) )
-        expectedAvgGainPerRoundBTC.append( log[0][0] )
-
-    # Plot AvgGainPerRoundFTC
-    plt.figure(figsize=(8,8))
-    pF = 1
-    xi = [i for i in range(len(c0Vals))]
-    pVals = [round(pF/c0,2) for c0 in c0Vals]
-    print(pVals)
-    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
-    plt.plot(xi, measuredAvgGainPerRoundFTC, marker='o', linestyle='--', color='r', label='Measured')
-    plt.plot(xi, expectedAvgGainPerRoundFTC, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, pVals)
-    plt.xlabel("p")
-    plt.ylabel("Avg. reward per round (BTC)")
-    plt.legend()
-    plt.savefig(fName + "AvgRewardPerRoundFTC.png")
-    plt.close()
-
-    # Plot AvgGainPerRoundBTC
-    plt.figure(figsize=(8,8))
-    xi = [i for i in range(len(c0Vals))]
-    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
-    plt.plot(xi, measuredAvgGainPerRoundBTC, marker='o', linestyle='--', color='r', label='Measured')
-    plt.plot(xi, expectedAvgGainPerRoundBTC, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, c0Vals)
-    plt.xlabel("$c_0$")
-    plt.ylabel("Avg. gain per round (BTC)")
-    plt.legend()
-    plt.savefig(fName + "AvgGainPerRoundBTC.png")
-    plt.close()
-
-    #  Plot FruitPerBlock
-    plt.figure(figsize=(8,8))
-    xi = [i for i in range(len(c0Vals))]
-    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
-    plt.plot(xi, measuredFruitPerBlock, marker='o', linestyle='--', color='r', label='Measured')
-    plt.plot(xi, expectedFruitPerBlock, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, c0Vals)
-    plt.xlabel("$c_0$")
-    plt.ylabel("Avg. number of fruits per block")
-    plt.legend()
-    plt.savefig(fName + "FruitPerBlock.png")
-    plt.close()
-
-    # Plot RewardPerFruit
-    plt.figure(figsize=(8,8))
-    xi = [i for i in range(len(c0Vals))]
-    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
-    plt.plot(xi, measuredFTCPerFruit, marker='o', linestyle='--', color='r', label='Measured')
-    plt.plot(xi, expectedFTCPerFruit, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, c0Vals)
-    plt.xlabel("$c_0$")
-    plt.ylabel("Reward per fruit (BTC)")
-    plt.legend()
-    plt.savefig(fName + "RewardPerFruit.png")
-    plt.close()
-
-    #  Plot RewardPerFruit
-    plt.figure(figsize=(8,8))
-    xi = [i for i in range(len(c0Vals))]
-    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
-    plt.plot(xi, measuredFTCPerBlock, marker='o', linestyle='--', color='r', label='Measured')
-    plt.plot(xi, expectedFTCPerBlock, marker='o', linestyle='--', color='b', label='Expected')
-    plt.xticks(xi, c0Vals)
-    plt.xlabel("$c_0$")
-    plt.ylabel("Reward per block (BTC)")
-    plt.legend()
-    plt.savefig(fName + "RewardPerBlock.png")
-    plt.close()
