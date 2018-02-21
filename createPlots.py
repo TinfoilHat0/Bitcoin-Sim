@@ -32,8 +32,8 @@ def plotPoolExperiment(poolLog):
     #  number of nodes in pools
     plt.figure(figsize=(8,8))
     xi = [i+1 for i in range(len(poolLog))]
-    plt.plot(xi, nNodesBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
-    plt.plot(xi, nNodesFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.plot(xi, nNodesBTC, marker='o', linestyle='--', color='r', label='Bitcoin Rewarding Scheme')
+    plt.plot(xi, nNodesFTC, marker='o', linestyle='--', color='b', label='Fruitchain Rewarding Scheme')
     plt.xticks(xi, xi)
     plt.xlabel("Snapshots")
     plt.ylabel("Number of nodes")
@@ -44,8 +44,8 @@ def plotPoolExperiment(poolLog):
     #  hash fraction in pools
     plt.figure(figsize=(8,8))
     xi = [i+1 for i in range(len(poolLog))]
-    plt.plot(xi, nHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
-    plt.plot(xi, nHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
+    plt.plot(xi, nHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin Rewarding Scheme')
+    plt.plot(xi, nHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain Rewarding Scheme')
     plt.xticks(xi, xi)
     plt.xlabel("Snapshots")
     plt.ylabel("Total hash rate fraction")
