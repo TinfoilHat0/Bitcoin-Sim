@@ -14,44 +14,23 @@ plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-def plotPoolExperiment(poolLog):
-    nNodesBTC, nNodesFTC = [], []
-    nHashBTC, nHashFTC = [], []
 
-    for log in poolLog:
-        hashBTC, hashFTC = 0, 0
-        for node in log[0]:
-            hashBTC += node.hashFrac
-        for node in log[1]:
-            hashFTC += node.hashFrac
-        nHashBTC.append(hashBTC )
-        nHashFTC.append(hashFTC)
-        nNodesBTC.append(len(log[0]))
-        nNodesFTC.append(len(log[1]))
-
-    #  number of nodes in pools
+def plotSelfishMining(hashFracs, rewardFracBTC, rewardFracFTC):
+    fName = "sim_results/selfishMiningTests/"
     plt.figure(figsize=(8,8))
-    xi = [i+1 for i in range(len(poolLog))]
-    plt.plot(xi, nNodesBTC, marker='o', linestyle='--', color='r', label='Bitcoin Rewarding Scheme')
-    plt.plot(xi, nNodesFTC, marker='o', linestyle='--', color='b', label='Fruitchain Rewarding Scheme')
-    plt.xticks(xi, xi)
-    plt.xlabel("Snapshots")
-    plt.ylabel("Number of nodes")
+    xi = [i for i in range(len(hashFracs))]
+    yi = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    # plt.ylim(0, 2 * max(expectedFruitPerBlock))
+    plt.plot(xi, rewardFracBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
+    plt.plot(xi, rewardFracFTC, marker='o', color='b', label='Fruitchain')
+    plt.xticks(xi, hashFracs)
+    plt.yticks(yi, yi)
+    plt.xlabel("Hashrate fraction of selfish-miner")
+    plt.ylabel("Reward fraction of selfish-miner")
     plt.legend()
-    plt.savefig("sim_results/poolTests/PoolNumberOfNodes.png")
+    plt.savefig(fName + "SelfishMining.png")
     plt.close()
 
-    #  hash fraction in pools
-    plt.figure(figsize=(8,8))
-    xi = [i+1 for i in range(len(poolLog))]
-    plt.plot(xi, nHashBTC, marker='o', linestyle='--', color='r', label='Bitcoin Rewarding Scheme')
-    plt.plot(xi, nHashFTC, marker='o', linestyle='--', color='b', label='Fruitchain Rewarding Scheme')
-    plt.xticks(xi, xi)
-    plt.xlabel("Snapshots")
-    plt.ylabel("Total hash rate fraction")
-    plt.legend()
-    plt.savefig("sim_results/poolTests/PoolHashRate.png")
-    plt.close()
 
 def plotValidationData(c0Vals):
     """

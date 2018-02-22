@@ -49,12 +49,16 @@ class Blockchain:
     def __init__(self, k=16):
         self.chain = []
         self.length = 0
-        
+
     def append(self, b):
         self.chain.append(b)
         self.length += 1
         b.height = self.length
         self.head = b
+
+    def adaptChain(self, other):
+        self.chain = other.chain[:]
+        self.length = other.length
 
     def __getitem__(self, key):
         return self.chain[key]

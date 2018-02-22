@@ -21,15 +21,11 @@ class Environment:
         self.nodes = []
         self.p = p
         self.pF = pF
-        self.blockChain = Blockchain()
-        self.fruitSet = []
         self.coinbaseReward = 12.5
         self.totalNetworkRewardBTC = 0
         self.totalNetworkRewardFTC = 0
         self.totalNetworkBlockMined = 0
         self.totalNetworkFruitMined = 0
-        self.totalNetworkFTCFromFruits = 0
-        self.totalNetworkFTCFromBlocks = 0
 
         # Parameters related with FTC rewarding scheme
         self.k = 16
@@ -38,9 +34,12 @@ class Environment:
         self.c3 = 1/100
         self.nFruitsInWindow = 0
 
-        # Parameters about pool tests
-        self.poolTestStartRound = 0
-        self.poolLog = [] # ([nodes in BTC], [nodes in FTC])
+        # Parameters about selfish-mining
+        self.privateChain = Blockchain()
+        self.publicChain = Blockchain()
+        self.attackerFruitSet = []
+        self.honestFruitSet = []
+        self.state = 0
 
         # formulas to test validity of implementation
         self.expFruitPerBlock = self.pF/self. p
@@ -71,123 +70,119 @@ class Environment:
         If a miner is succesful, he broadcasts and others immediately deliver
         '''
         # select leaders for round, id = n means nothing is mined
+        # in selfish, we just have 2 nodes. if ID == honest, else honest
         blockLeaderID = np.random.choice(self.n+1, 1, p=self.blockLeaderProbs)[0]
         fruitLeaderID = np.random.choice(self.n+1, 1, p=self.fruitLeaderProbs)[0]
         b, f = None, None
         if fruitLeaderID != self.n:
             f = self.nodes[fruitLeaderID].mineFruit(roundNum)
+
+        # selfish-mining according to state machine model, see selfish mining paper
         if blockLeaderID != self.n:
             b = self.nodes[blockLeaderID].mineBlock(roundNum)
-            # Trigger reward schemes
-            self.awardBTC(blockLeaderID, roundNum)
-            self.awardFTC(blockLeaderID, roundNum)
-
-        self.runPoolTest(roundNum)
+            # honest finds first block
+            if self.state == 0 and blockLeaderID == 0:
+                self.publicChain.append(b)
+                self.privateChain.adaptChain(self.publicChain)
+                self.attackerFruitSet = []
+            # attacker finds first block
+            elif self.state == 0 and blockLeaderID == 1:
+                self.privateChain.append(b)
+                self.state = 1
+            # attacker has a secret block and honest finds
+            elif self.state == 1 and blockLeaderID == 0:
+                self.publicChain.append(b)
+                self.state = -1
+            # we have a fork, attacker finds a block and resolves the fork
+            elif self.state == -1 and blockLeaderID == 1:
+                self.privateChain.append(b)
+                self.publicChain.adaptChain(self.privateChain)
+                self.honestFruitSet =[]
+                self.state = 0
+            # we have a fork, honest finds a block and resolves the fork
+            elif self.state == -1 and blockLeaderID == 0:
+                # honest picks a chain at random and extends it
+                if random.random() < 0.5:
+                    self.privateChain.append(b)
+                    self.publicChain.adaptChain(self.privateChain)
+                else:
+                    self.publicChain.append(b)
+                    self.privateChain.adaptChain(self.publicChain)
+                self.attackerFruitSet = []
+                self.state = 0
+            # attacker has a lead of 1 and finds a block.
+            elif self.state >= 1 and blockLeaderID == 1:
+                self.privateChain.append(b)
+                self.state += 1
+            # attacker has a lead of 2 and honest finds a block
+            elif self.state == 2 and blockLeaderID == 0:
+                self.publicChain.adaptChain(self.privateChain)
+                self.honestFruitSet = []
+                self.state = 0
+            # attacker has a lead > 2 and honest finds a block
+            elif self.state > 2 and blockLeaderID == 0:
+                self.publicChain.append(b)
+                self.state -= 1
 
         # save statistics at the end of last round
         if roundNum == self.r:
+            # determine public chain
+            if self.state > 0:
+                self.publicChain.adaptChain(self.privateChain)
+            if self.state == -1 and random.random() < 0.5:
+                self.publicChain.adaptChain(self.privateChain)
+
+            self.getMineCount(self.publicChain)
+            self.awardBTC(self.publicChain)
+            self.awardFTC(self.publicChain)
+
             self.saveStatistics()
         return b, f
 
-    def runPoolTest(self, roundNum=0, t=125000, th=0.85):
-        """
-        t: snapshot interval length
-        th: switch threshold
-        """
-        # Initialize nodes when block length is k
-        if self.poolTestStartRound == 0 and self.blockChain.length == self.k:
-            self.poolTestStartRound = roundNum
-            nodesInBTC, nodesInFTC = [], []
-            for node in self.nodes:
-                node.poolReward = 0
-                # initially, all nodes are in BTC
-                node.poolID = 0
-                nodesInBTC.append(node)
-            self.poolLog.append( (nodesInBTC, nodesInFTC) )
-        # pool switching
-        elif self.blockChain.length > self.k and (roundNum-self.poolTestStartRound)%t == 0:
-            print('!')
-            nodesInBTC, nodesInFTC = [], []
-            for node in self.nodes:
-                expReward = t*node.expRewardPerRound
-                print(node.hashFrac, node.poolID, node.totalPoolReward, expReward)
-                # do pool switches
-                if node.totalPoolReward < expReward*th:
-                    if node.poolID == 0:
-                        node.poolID = 1
-                    else:
-                        node.poolID = 0
-                # update the log
-                if node.poolID == 0:
-                    nodesInBTC.append(node)
-                else:
-                    nodesInFTC.append(node)
-                node.totalPoolReward = 0
-            self.poolLog.append( (nodesInBTC, nodesInFTC) )
+    def getMineCount(self, chain):
+        """ Compute how many fruits/block each miner mined """
+        for b in chain:
+            self.nodes[b.minerID].nBlocksMined += 1
+            for f in b.fruits:
+                self.nodes[f.minerID].nFruitsMined += 1
 
-
-    def awardBTC(self, blockLeaderID, roundNum=0):
+    def awardBTC(self, chain):
         """
-        blockLeaderID: index of the leader node
         Distributes rewards to miners acc. to Bitcoin rewarding scheme, i.e.,
-        miner gets everything
+        miner gets everything.
         """
-        reward = self.blockChain.head.reward
-        self.nodes[blockLeaderID].totalRewardBTC += reward
-        self.nodes[blockLeaderID].rewardRoundBTC.add(roundNum)
+        for b in chain:
+            self.nodes[b.minerID].totalRewardBTC += b.reward
 
-        # pool experiment
-        if self.nodes[blockLeaderID].poolID == 0:
-            self.nodes[blockLeaderID].totalPoolReward += reward
-
-    def awardFTC(self, blockLeaderID, roundNum=0):
+    def awardFTC(self, chain):
         """
-        blockLeaderID: index of the leader node
         Distributes rewards to miners according to Fruitchain rewarding scheme
         (see paper)
         """
-        head = self.blockChain.head
-        blockChain = self.blockChain
-        if head.height > self.k:
+        if chain.length < self.k+1:
+            return
+
+        for b in chain[:self.k+1]:
+            self.nFruitsInWindow += b.nFruits + 1 # +1 is the implicity fruit
+        for b in chain[self.k:]:
             # direct reward
-            x = head.reward
-            self.nodes[blockLeaderID].totalRewardFTC += self.c1*x
-            self.nodes[blockLeaderID].totalFTCFromBlocks += self.c1*x
-            self.nodes[blockLeaderID].rewardRoundFTC.add(roundNum)
-            # pool experiment
-            if self.nodes[blockLeaderID].poolID == 1:
-                self.nodes[blockLeaderID].totalPoolReward += self.c1*x
+            x = b.reward
+            self.nodes[b.minerID].totalRewardFTC += self.c1*x
             # compute normal reward per fruit
             R = (1-self.c1)*x
             n0 = R / self.nFruitsInWindow
             # iterate over last k blocks and distribute window reward
-            for b in blockChain[-self.k-1:-1]:
-                for f in b.fruits:
-                    l = f.contBlockHeight-f.hangBlockHeight-1 # number of blocks between hanging and containing block of fruit
-                    dL = self.c3*(1-l/(self.k-1))
-                    # award fruit miners
+            for _b in chain[b.height-1-self.k : b.height-1]:
+                for f in _b.fruits:
+                    dL = 0
+                    if _b.minerID == 1:
+                        dL = self.c3 # attacker gets maximal freshness bonus
                     self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].totalFTCFromFruits += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].rewardRoundFTC.add(roundNum)
-                    if self.nodes[f.minerID].poolID == 1:
-                        self.nodes[f.minerID].totalPoolReward += n0*(1 - self.c2 + dL)
-                    # award block miners
-                    self.nodes[b.minerID].totalRewardFTC += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].totalFTCFromBlocks += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].rewardRoundFTC.add(roundNum)
-                    if self.nodes[b.minerID].poolID == 1:
-                        self.nodes[b.minerID].totalPoolReward += n0*(self.c2 - dL)
-
-                self.nodes[b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
-                self.nodes[b.minerID].totalFTCFromBlocks += n0
-                self.nodes[b.minerID].rewardRoundFTC.add(roundNum)
-                if self.nodes[b.minerID].poolID == 1:
-                    self.nodes[b.minerID].totalPoolReward += n0
+                    self.nodes[_b.minerID].totalRewardFTC += n0*(self.c2 - dL)
+                self.nodes[_b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
             # slide the window and adjust the number of fruits
-            self.nFruitsInWindow -= (blockChain[-self.k-1].nFruits + 1)
-            self.nFruitsInWindow += (head.nFruits + 1)
-        else:
-            self.nFruitsInWindow += (head.nFruits + 1) # +1 is the implicit fruit (see paper)
+            self.nFruitsInWindow -= ( chain[b.height-1-self.k].nFruits + 1 )
+            self.nFruitsInWindow += ( b.nFruits + 1 )
 
     def saveStatistics(self):
         """
@@ -200,35 +195,6 @@ class Environment:
             self.totalNetworkRewardFTC += node.totalRewardFTC
             self.totalNetworkBlockMined += node.nBlocksMined
             self.totalNetworkFruitMined += node.nFruitsMined
-            self.totalNetworkFTCFromBlocks += node.totalFTCFromBlocks
-            self.totalNetworkFTCFromFruits += node.totalFTCFromFruits
-            # compute metrics for nodes, d_i/s_i
-            if len(node.rewardRoundBTC) == 1: # if no reward earned, reward gap is r
-                node.avgRewardGapBTC = self.environment.r
-            else:
-                node.avgRewardGapBTC = sum( np.diff(list(node.rewardRoundBTC)) ) / len( np.diff(list(node.rewardRoundBTC)) )
-            if len(node.rewardRoundFTC) == 1:
-                node.avgRewardGapFTC = self.environment.r
-            else:
-                node.avgRewardGapFTC = sum( np.diff(list(node.rewardRoundFTC)) ) / len( np.diff(list(node.rewardRoundFTC)) )
-            node.sustainabilityBTC = node.totalRewardBTC / node.avgRewardGapBTC
-            node.sustainabilityFTC = node.totalRewardFTC / node.avgRewardGapFTC
-        # After computing the total reward, compute fairness metric
-        for node in self.nodes:
-            fairRewardBTC = self.totalNetworkRewardBTC * node.hashFrac
-            fairRewardFTC = self.totalNetworkRewardFTC * node.hashFrac
-            node.fairnessBTC = ( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
-            node.fairnessFTC = ( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
-
-    def logRewardByRound(self):
-        """
-        log total reward of each node both for BTC and FTC after every round
-        """
-        for node in self.nodes:
-            node.totalRewardByRoundBTC.append(node.totalRewardBTC)
-            node.totalRewardByRoundFTC.append(node.totalRewardFTC)
-        return
-
 
 class Node:
     def __init__(self, _id=0, hashFrac=1, env=Environment()):
@@ -245,50 +211,28 @@ class Node:
         self.nFruitsMined = 0
         self.totalRewardBTC = 0
         self.totalRewardFTC = 0
-        self.totalFTCFromFruits = 0
-        self.totalFTCFromBlocks = 0
-        self.totalRewardByRoundBTC = []
-        self.totalRewardByRoundFTC = []
-        # rounds in which node earned a reward
-        self.rewardRoundBTC = set({0})
-        self.rewardRoundFTC = set({0})
-        self.avgRewardGapBTC = -1
-        self.avgRewardGapFTC = -1
-        # metric values of node, i.e di and si(see paper)
-        self.sustainabilityBTC = -1
-        self.fairnessBTC = -1
-        self.sustainabilityFTC = -1
-        self.fairnessFTC = -1
 
-        # theoretical results
-        self.expRewardPerRound = self.environment.p*self.hashFrac*self.environment.coinbaseReward
-        # pool experiment parameters
-        self.poolID = None
-        self.totalPoolReward = 0
 
     def mineFruit(self, roundNum):
         '''
         create a fruit, add it to fruitset of environment and return it
         '''
-        # by default, fruit hangs from head of chain (i.e maximum freshness bonus)
-        hangBlockHeight = self.environment.blockChain.length
-        fruit = Fruit(self.id, roundNum, hangBlockHeight)
-        self.environment.fruitSet.append(fruit)
-        self.nFruitsMined += 1
+        fruit = Fruit(self.id, roundNum)
+        self.environment.attackerFruitSet.append(fruit)
+        self.environment.honestFruitSet.append(fruit)
         return fruit
 
     def mineBlock(self, roundNum):
         '''
         create a block, add it to blockchain and return it
         '''
-        fruits = self.environment.fruitSet
-        self.environment.fruitSet = []
+        if self.id == 0:
+            fruits = self.environment.honestFruitSet
+            self.environment.honestFruitSet = []
+        else:
+            fruits = self.environment.attackerFruitSet
+            self.environment.attackerFruitSet = []
         block = Block(self.id, roundNum, fruits)
-        self.environment.blockChain.append(block)
-        for f in fruits:
-            f.includeRound = roundNum
-            f.contBlockHeight = self.environment.blockChain.length
-        self.nBlocksMined += 1
         return block
 
     def __repr__(self):
