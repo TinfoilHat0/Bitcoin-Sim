@@ -164,6 +164,7 @@ class Environment:
 
         for b in chain[:self.k+1]:
             self.nFruitsInWindow += b.nFruits + 1 # +1 is the implicity fruit
+
         for b in chain[self.k:]:
             # direct reward
             x = b.reward
@@ -175,13 +176,13 @@ class Environment:
             for _b in chain[b.height-1-self.k : b.height-1]:
                 for f in _b.fruits:
                     dL = 0
-                    if _b.minerID == 1:
-                        dL = self.c3 # attacker gets maximal freshness bonus
+                    if f.minerID == 1:
+                        dL = self.c3 # attacker gets maximum freshness bonus of his fruits
                     self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
                     self.nodes[_b.minerID].totalRewardFTC += n0*(self.c2 - dL)
                 self.nodes[_b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
             # slide the window and adjust the number of fruits
-            self.nFruitsInWindow -= ( chain[b.height-1-self.k].nFruits + 1 )
+            self.nFruitsInWindow -= ( chain[b.height-self.k-1].nFruits + 1 )
             self.nFruitsInWindow += ( b.nFruits + 1 )
 
     def saveStatistics(self):
