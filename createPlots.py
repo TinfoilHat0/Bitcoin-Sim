@@ -54,7 +54,7 @@ def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
         plt.plot(xi, metricLengthBTC, marker='o', linestyle='--', color='r', label='Bitcoin')
         plt.plot(xi, metricLengthFTC, marker='o', linestyle='--', color='b', label='Fruitchain')
         plt.xticks(xi, lengths)
-        plt.xlabel("Interval Length")
+        plt.xlabel("Interval Length (rounds)")
         plt.ylabel("Unfairness Metric")
         plt.legend()
         plt.savefig(filename + "UnfairnessLength.png")
