@@ -82,7 +82,7 @@ class Environment:
             self.awardBTC(blockLeaderID, roundNum)
             self.awardFTC(blockLeaderID, roundNum)
 
-        self.runPoolTest(roundNum)
+        # self.runPoolTest(roundNum)
 
         # save statistics at the end of last round
         if roundNum == self.r:
