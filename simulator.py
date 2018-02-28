@@ -25,11 +25,6 @@ class Simulator:
         self.sustainabilityLogBTC = []
         self.sustainabilityLogFTC = []
 
-        self.fruitPerBlockLog = []
-        self.FTCPerFruitLog = []
-        self.FTCPerBlockLog = []
-        self.avgGainPerRoundFTCLog = []
-        self.avgGainPerRoundBTCLog = []
 
     def initializeSim(self):
         self.environment = Environment(self.p, self.pF, self.r)
@@ -48,44 +43,12 @@ class Simulator:
                     print('Round:' + str(j) + ' has finished.')
             print('Simulation for r=' + str(j) + ' rounds has finished!')
             print("Simulation " + str(i) + " has finished!")
-            #self.logValidationData()
-            #self.logMetricData()
+            self.logMetricData()
         print("All simulations have finished!")
         print('Writing results to file: ' + filename)
-        #self.writeValidationData(filename)
-        #self.writeMetricData()
+        self.writeMetricData(filename)
         print("Finished!")
 
-    def logValidationData(self):
-        # Fruit per block
-        fruitPerBlock = self.environment.totalNetworkFruitMined / self.environment.totalNetworkBlockMined
-        self.fruitPerBlockLog.append( (fruitPerBlock, self.environment.expFruitPerBlock) )
-        # Reward per fruit
-        FTCPerFruit = self.environment.totalNetworkFTCFromFruits / self.environment.totalNetworkFruitMined
-        self.FTCPerFruitLog.append( (FTCPerFruit, self.environment.expFTCPerFruit) )
-        # Reward per block
-        FTCPerBlock = self.environment.totalNetworkFTCFromBlocks / self.environment.totalNetworkBlockMined
-        self.FTCPerBlockLog.append( (FTCPerBlock , self.environment.expFTCPerBlock) )
-
-    def writeValidationData(self, filename):
-        # Fruit per block
-        file = open(filename + "FruitPerBlock", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        for log in self.fruitPerBlockLog:
-            file.write(','.join(map(str, log)) + "\n")
-        file.close()
-        # Reward per fruit
-        file = open(filename + "RewardPerFruit", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        for log in self.FTCPerFruitLog:
-            file.write(','.join(map(str, log)) + "\n")
-        file.close()
-        # Reward per block
-        file = open(filename + "RewardPerBlock", 'w')
-        file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        for log in self.FTCPerBlockLog:
-            file.write(','.join(map(str, log)) + "\n")
-        file.close()
 
     def logMetricData(self):
         # Unfairness metric
@@ -112,29 +75,32 @@ class Simulator:
         # 1. BTC data
         file = open(filename + "FairnessMetricBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("# Fairness metric of system\n" )
+        file.write("# Fairness metric of network\n" )
         for log in self.fairnessLogBTC:
             file.write( str(np.mean(log)) + "\n")
         file.close()
         # 2.FTC data
         file = open(filename + "FairnessMetricFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("#  Fairness metric of system \n" )
+        file.write("#  Fairness metric of network \n" )
         for log in self.fairnessLogFTC:
             file.write( str(np.mean(log)) + "\n")
         file.close()
+
+        '''
         # Sustainability metric
         # 1. BTC data
         file = open(filename + "SustainabilityMetricBTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("# Sustainability of system \n" )
+        file.write("# Sustainability of network \n" )
         for log in self.sustainabilityLogBTC:
             file.write( str(np.mean(log)) + "\n")
         file.close()
         # 2.FTC data
         file = open(filename + "SustainabilityMetricFTC", 'w')
         file.write("#r:" + str(self.r) + " p:" +str(self.p) + " pF:" + str(self.pF) + "\n")
-        file.write("# Sustainability of system \n" )
+        file.write("# Sustainability of network \n" )
         for log in self.sustainabilityLogFTC:
             file.write( str(np.mean(log)) + "\n")
         file.close()
+        '''

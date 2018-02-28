@@ -26,10 +26,6 @@ class Environment:
         self.coinbaseReward = 12.5
         self.totalNetworkRewardBTC = 0
         self.totalNetworkRewardFTC = 0
-        self.totalNetworkBlockMined = 0
-        self.totalNetworkFruitMined = 0
-        self.totalNetworkFTCFromFruits = 0
-        self.totalNetworkFTCFromBlocks = 0
 
         # Parameters related with FTC rewarding scheme
         self.k = 16
@@ -37,10 +33,6 @@ class Environment:
         self.c2 = 1/10
         self.c3 = 1/100
         self.nFruitsInWindow = 0
-
-        # Parameters about pool tests
-        self.poolTestStartRound = 0
-        self.poolLog = [] # ([nodes in BTC], [nodes in FTC])
 
         # formulas to test validity of implementation
         self.expFruitPerBlock = self.pF/self. p
@@ -82,49 +74,10 @@ class Environment:
             self.awardBTC(blockLeaderID, roundNum)
             self.awardFTC(blockLeaderID, roundNum)
 
-        # self.runPoolTest(roundNum)
-
         # save statistics at the end of last round
         if roundNum == self.r:
             self.saveStatistics()
         return b, f
-
-    def runPoolTest(self, roundNum=0, t=125000, th=0.85):
-        """
-        t: snapshot interval length
-        th: switch threshold
-        """
-        # Initialize nodes when block length is k
-        if self.poolTestStartRound == 0 and self.blockChain.length == self.k:
-            self.poolTestStartRound = roundNum
-            nodesInBTC, nodesInFTC = [], []
-            for node in self.nodes:
-                node.poolReward = 0
-                # initially, all nodes are in BTC
-                node.poolID = 0
-                nodesInBTC.append(node)
-            self.poolLog.append( (nodesInBTC, nodesInFTC) )
-        # pool switching
-        elif self.blockChain.length > self.k and (roundNum-self.poolTestStartRound)%t == 0:
-            print('!')
-            nodesInBTC, nodesInFTC = [], []
-            for node in self.nodes:
-                expReward = t*node.expRewardPerRound
-                print(node.hashFrac, node.poolID, node.totalPoolReward, expReward)
-                # do pool switches
-                if node.totalPoolReward < expReward*th:
-                    if node.poolID == 0:
-                        node.poolID = 1
-                    else:
-                        node.poolID = 0
-                # update the log
-                if node.poolID == 0:
-                    nodesInBTC.append(node)
-                else:
-                    nodesInFTC.append(node)
-                node.totalPoolReward = 0
-            self.poolLog.append( (nodesInBTC, nodesInFTC) )
-
 
     def awardBTC(self, blockLeaderID, roundNum=0):
         """
@@ -134,11 +87,7 @@ class Environment:
         """
         reward = self.blockChain.head.reward
         self.nodes[blockLeaderID].totalRewardBTC += reward
-        self.nodes[blockLeaderID].rewardRoundBTC.add(roundNum)
-
-        # pool experiment
-        if self.nodes[blockLeaderID].poolID == 0:
-            self.nodes[blockLeaderID].totalPoolReward += reward
+        self.nodes[blockLeaderID].rewardRoundBTC.append(roundNum)
 
     def awardFTC(self, blockLeaderID, roundNum=0):
         """
@@ -152,37 +101,24 @@ class Environment:
             # direct reward
             x = head.reward
             self.nodes[blockLeaderID].totalRewardFTC += self.c1*x
-            self.nodes[blockLeaderID].totalFTCFromBlocks += self.c1*x
-            self.nodes[blockLeaderID].rewardRoundFTC.add(roundNum)
-            # pool experiment
-            if self.nodes[blockLeaderID].poolID == 1:
-                self.nodes[blockLeaderID].totalPoolReward += self.c1*x
+            self.nodes[blockLeaderID].rewardRoundFTC.append(roundNum)
             # compute normal reward per fruit
             R = (1-self.c1)*x
             n0 = R / self.nFruitsInWindow
             # iterate over last k blocks and distribute window reward
             for b in blockChain[-self.k-1:-1]:
                 for f in b.fruits:
-                    l = f.contBlockHeight-f.hangBlockHeight-1 # number of blocks between hanging and containing block of fruit
-                    dL = self.c3*(1-l/(self.k-1))
+                    dL = self.c3
                     # award fruit miners
                     self.nodes[f.minerID].totalRewardFTC += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].totalFTCFromFruits += n0*(1 - self.c2 + dL)
-                    self.nodes[f.minerID].rewardRoundFTC.add(roundNum)
-                    if self.nodes[f.minerID].poolID == 1:
-                        self.nodes[f.minerID].totalPoolReward += n0*(1 - self.c2 + dL)
+                    if self.nodes[f.minerID].rewardRoundFTC[-1] != roundNum:
+                        self.nodes[f.minerID].rewardRoundFTC.append(roundNum)
                     # award block miners
                     self.nodes[b.minerID].totalRewardFTC += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].totalFTCFromBlocks += n0*(self.c2 - dL)
-                    self.nodes[b.minerID].rewardRoundFTC.add(roundNum)
-                    if self.nodes[b.minerID].poolID == 1:
-                        self.nodes[b.minerID].totalPoolReward += n0*(self.c2 - dL)
+                    if self.nodes[b.minerID].rewardRoundFTC[-1] != roundNum:
+                        self.nodes[b.minerID].rewardRoundFTC.append(roundNum)
 
                 self.nodes[b.minerID].totalRewardFTC += n0 # reward of the implicit fruit goes to block miner
-                self.nodes[b.minerID].totalFTCFromBlocks += n0
-                self.nodes[b.minerID].rewardRoundFTC.add(roundNum)
-                if self.nodes[b.minerID].poolID == 1:
-                    self.nodes[b.minerID].totalPoolReward += n0
             # slide the window and adjust the number of fruits
             self.nFruitsInWindow -= (blockChain[-self.k-1].nFruits + 1)
             self.nFruitsInWindow += (head.nFruits + 1)
@@ -198,21 +134,16 @@ class Environment:
             # network's reward as a whole
             self.totalNetworkRewardBTC += node.totalRewardBTC
             self.totalNetworkRewardFTC += node.totalRewardFTC
-            self.totalNetworkBlockMined += node.nBlocksMined
-            self.totalNetworkFruitMined += node.nFruitsMined
-            self.totalNetworkFTCFromBlocks += node.totalFTCFromBlocks
-            self.totalNetworkFTCFromFruits += node.totalFTCFromFruits
             # compute metrics for nodes, d_i/s_i
             if len(node.rewardRoundBTC) == 1: # if no reward earned, reward gap is r
                 node.avgRewardGapBTC = self.environment.r
             else:
-                node.avgRewardGapBTC = sum( np.diff(list(node.rewardRoundBTC)) ) / len( np.diff(list(node.rewardRoundBTC)) )
+                node.avgRewardGapBTC = sum( np.diff(node.rewardRoundBTC) ) / (len(node.rewardRoundBTC)-1)
             if len(node.rewardRoundFTC) == 1:
                 node.avgRewardGapFTC = self.environment.r
             else:
-                node.avgRewardGapFTC = sum( np.diff(list(node.rewardRoundFTC)) ) / len( np.diff(list(node.rewardRoundFTC)) )
-            node.sustainabilityBTC = node.totalRewardBTC / node.avgRewardGapBTC
-            node.sustainabilityFTC = node.totalRewardFTC / node.avgRewardGapFTC
+                node.avgRewardGapFTC = sum( np.diff(node.rewardRoundFTC) ) / (len(node.rewardRoundFTC)-1)
+
         # After computing the total reward, compute fairness metric
         for node in self.nodes:
             fairRewardBTC = self.totalNetworkRewardBTC * node.hashFrac
@@ -220,15 +151,8 @@ class Environment:
             node.fairnessBTC = ( (abs(node.totalRewardBTC - fairRewardBTC) / fairRewardBTC)*100 )
             node.fairnessFTC = ( (abs(node.totalRewardFTC - fairRewardFTC) / fairRewardFTC)*100 )
 
-    def logRewardByRound(self):
-        """
-        log total reward of each node both for BTC and FTC after every round
-        """
-        for node in self.nodes:
-            node.totalRewardByRoundBTC.append(node.totalRewardBTC)
-            node.totalRewardByRoundFTC.append(node.totalRewardFTC)
-        return
-
+            node.sustainabilityBTC = node.totalRewardBTC / node.avgRewardGapBTC
+            node.sustainabilityFTC = node.totalRewardFTC / node.avgRewardGapFTC
 
 class Node:
     def __init__(self, _id=0, hashFrac=1, env=Environment()):
@@ -245,26 +169,30 @@ class Node:
         self.nFruitsMined = 0
         self.totalRewardBTC = 0
         self.totalRewardFTC = 0
-        self.totalFTCFromFruits = 0
-        self.totalFTCFromBlocks = 0
-        self.totalRewardByRoundBTC = []
-        self.totalRewardByRoundFTC = []
         # rounds in which node earned a reward
-        self.rewardRoundBTC = set({0})
-        self.rewardRoundFTC = set({0})
+        self.rewardRoundBTC = [0]
+        self.rewardRoundFTC = [0]
         self.avgRewardGapBTC = -1
         self.avgRewardGapFTC = -1
         # metric values of node, i.e di and si(see paper)
         self.sustainabilityBTC = -1
         self.fairnessBTC = -1
+
         self.sustainabilityFTC = -1
         self.fairnessFTC = -1
 
         # theoretical results
-        self.expRewardPerRound = self.environment.p*self.hashFrac*self.environment.coinbaseReward
-        # pool experiment parameters
-        self.poolID = None
-        self.totalPoolReward = 0
+        p = self.environment.p
+        pF = self.environment.pF
+        h = self.hashFrac
+        x = self.environment.coinbaseReward
+        k = self.environment.k
+        c0 = p / pF
+        self.expRewardPerRound = p*h*x
+        self.expRewardGapBTC = 1 / (p*h)
+        
+        denom = (1-h)**(k+1+k*c0)
+        self.expRewardGapFTC = 1 / p*(1-denom)
 
     def mineFruit(self, roundNum):
         '''
