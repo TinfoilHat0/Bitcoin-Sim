@@ -14,6 +14,36 @@ plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
+def plotReward(BTCReward, FTCReward, Cost):
+
+    xi = [i for i in range(len(Cost))]
+
+    profitBTC, profitFTC = [], []
+    for i in range(len(BTCReward)):
+        profitBTC.append( BTCReward[i] - Cost[i] )
+        profitFTC.append( FTCReward[i] - Cost[i] )
+
+    plt.figure(figsize=(8,8))
+    plt.plot(xi, BTCReward, color='g', label='Gain')
+    plt.plot(xi, Cost, color='r', label='Cost')
+    plt.plot(xi, profitBTC, color='orange', label='Profit')
+    plt.xlabel("Rounds")
+    plt.ylabel("BTC")
+    plt.legend()
+    plt.savefig("BTC Profit")
+    plt.close()
+
+    plt.figure(figsize=(8,8))
+    plt.plot(xi, FTCReward, color='g', label='Gain')
+    plt.plot(xi, Cost, color='r', label='Cost')
+    plt.plot(xi, profitFTC, color='orange', label='Profit')
+    plt.xlabel("Rounds")
+    plt.ylabel("BTC")
+    plt.legend()
+    plt.savefig("FTC Profit")
+    plt.close()
+
+
 
 def plotFairnessMetric(lengths=[], hashSettings=[], blockSettings=[]):
     """

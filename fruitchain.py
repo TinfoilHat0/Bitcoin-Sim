@@ -40,6 +40,17 @@ class Environment:
         self.expFTCPerFruit = self.k*self.expNormalFruitReward*(1-self.c2+self.c3)
         self.expFTCPerBlock = self.c1*self.coinbaseReward + self.k*(self.expNormalFruitReward + self.expFruitPerBlock*self.expNormalFruitReward*(self.c2-self.c3))
 
+         # Hard-coded constants taken from real world data of Bitcoin
+        self.coinbaseReward = 12.5
+        self.networkHashRate = 16 * (10**5) # Th/s
+        self.usdToBTC = 9 * (10**-5) # 1 USD = 0.00009 BTC
+        self.costPerKWh = 18 * (10**-6) # In France, cost per KWh = 0.2 USD = 0.000018 BTC
+        self.deviceHashRate = 14 # TH/s, AntMiner S9
+        self.costPerDevice = 0.23 # BTC
+        self.consumptionPerDevice = 1.372 # KWh
+
+        self.startRound = 0
+
     def initializeNodes(self, nodes):
         '''
         nodes: list of nodes which are in the environment
@@ -74,10 +85,27 @@ class Environment:
             self.awardBTC(blockLeaderID, roundNum)
             self.awardFTC(blockLeaderID, roundNum)
 
+        if self.blockChain.length == self.k:
+            self.startRound = roundNum
+            for node in self.nodes:
+                node.rewardBTC = 0
+                node.rewardFTC = 0
+        if self.blockChain.length > self.k:
+            self.logRewardByRound(roundNum)
+
+
         # save statistics at the end of last round
-        if roundNum == self.r:
-            self.saveStatistics()
+        #if roundNum == self.r:
+        #    self.saveStatistics()
         return b, f
+
+
+    def logRewardByRound(self, roundNum):
+        for node in self.nodes:
+            node.rewardByRoundBTC.append(node.totalRewardBTC)
+            node.rewardByRoundFTC.append(node.totalRewardFTC)
+
+            node.costByRound.append(node.costPerRound* (roundNum-self.startRound))
 
     def awardBTC(self, blockLeaderID, roundNum=0):
         """
@@ -136,11 +164,11 @@ class Environment:
             self.totalNetworkRewardFTC += node.totalRewardFTC
             # compute metrics for nodes, d_i/s_i
             if len(node.rewardRoundBTC) == 1: # if no reward earned, reward gap is r
-                node.avgRewardGapBTC = self.environment.r
+                node.avgRewardGapBTC = self.r
             else:
                 node.avgRewardGapBTC = sum( np.diff(node.rewardRoundBTC) ) / (len(node.rewardRoundBTC)-1)
             if len(node.rewardRoundFTC) == 1:
-                node.avgRewardGapFTC = self.environment.r
+                node.avgRewardGapFTC = self.r
             else:
                 node.avgRewardGapFTC = sum( np.diff(node.rewardRoundFTC) ) / (len(node.rewardRoundFTC)-1)
 
@@ -181,6 +209,9 @@ class Node:
         self.sustainabilityFTC = -1
         self.fairnessFTC = -1
 
+
+        self.rewardByRoundBTC = []
+        self.rewardByRoundFTC = []
         # theoretical results
         p = self.environment.p
         pF = self.environment.pF
@@ -190,9 +221,14 @@ class Node:
         c0 = p / pF
         self.expRewardPerRound = p*h*x
         self.expRewardGapBTC = 1 / (p*h)
-        
+
         denom = (1-h)**(k+1+k*c0)
         self.expRewardGapFTC = 1 / p*(1-denom)
+
+        #self.calculateCost()
+
+        self.costPerRound = p*12.5*h*0.1
+        self.costByRound = []
 
     def mineFruit(self, roundNum):
         '''
@@ -221,3 +257,10 @@ class Node:
 
     def __repr__(self):
         return str(self.id) + '|' + str(self.hashFrac)
+
+    def calculateCost(self):
+        hashRate = self.hashFrac * self.environment.networkHashRate
+        nDevices = ceil (hashRate / self.environment.deviceHashRate)
+        self.initialCost = nDevices * self.environment.costPerDevice
+        consumptionPerRound = self.environment.consumptionPerDevice * nDevices * (self.environment.p / 6) # in KWh
+        self.costPerRound = consumptionPerRound * self.environment.costPerKWh
